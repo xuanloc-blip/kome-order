@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KOME 受注システム</title>
+<style>
+:root {
+  --blue: #1976d2; --blue-dark: #1251a3; --blue-light: #e3f2fd;
+  --red: #c0392b; --red-light: #fff0f0;
+  --green: #2e7d32; --orange: #e65100;
+  --gray1: #1a1a1a; --gray2: #444; --gray3: #888; --gray4: #ccc; --gray5: #f5f5f5;
+  --white: #fff; --shadow: 0 2px 8px rgba(0,0,0,.12); --radius: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif; background: #f0f2f5; font-size: 14px; color: var(--gray1); height: 100vh; overflow: hidden; }
+
+/* TOP BAR */
+#topbar { height: 52px; background: var(--blue); display: flex; align-items: center; gap: 8px; padding: 0 12px; }
+#topbar h1 { color: #fff; font-size: 15px; font-weight: 700; white-space: nowrap; margin-right: 4px; }
+#customer-search-wrap { position: relative; flex: 0 0 280px; }
+#customer-search-input { width: 100%; padding: 7px 32px 7px 10px; border: none; border-radius: var(--radius); font-size: 13px; outline: none; }
+#customer-search-input::placeholder { color: var(--gray3); }
+#btn-add-customer { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 18px; color: var(--gray3); cursor: pointer; line-height: 1; }
+#customer-dropdown { position: absolute; top: calc(100% + 4px); left: 0; width: 340px; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); z-index: 200; max-height: 320px; overflow-y: auto; display: none; }
+#customer-dropdown.show { display: block; }
+.cust-dd-item { padding: 9px 12px; cursor: pointer; border-bottom: 1px solid var(--gray5); }
+.cust-dd-item:hover { background: var(--blue-light); }
+.cust-dd-name { font-weight: 600; font-size: 13px; }
+.cust-dd-sub { font-size: 11px; color: var(--gray3); }
+
+/* TABS */
+#tabs-bar { display: flex; align-items: center; gap: 4px; flex: 1; overflow-x: auto; scrollbar-width: none; }
+#tabs-bar::-webkit-scrollbar { display: none; }
+.tab-item { display: flex; align-items: center; gap: 6px; padding: 5px 12px; background: rgba(255,255,255,.2); color: #fff; border-radius: 6px 6px 0 0; cursor: pointer; white-space: nowrap; font-size: 12px; font-weight: 500; border: 1px solid rgba(255,255,255,.2); border-bottom: none; min-width: 100px; max-width: 160px; }
+.tab-item.active { background: #fff; color: var(--blue); font-weight: 700; }
+.tab-close { font-size: 14px; opacity: .6; line-height: 1; }
+.tab-close:hover { opacity: 1; }
+#btn-new-tab { background: rgba(255,255,255,.2); color: #fff; border: none; border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 18px; line-height: 1; }
+#btn-new-tab:hover { background: rgba(255,255,255,.3); }
+
+/* TOP RIGHT */
+#topbar-right { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+#connection-status { font-size: 12px; color: #fff; opacity: .8; white-space: nowrap; }
+#connection-status.ok { color: #a5d6a7; opacity: 1; }
+#connection-status.err { color: #ff8a80; opacity: 1; }
+.tb-btn { background: rgba(255,255,255,.2); color: #fff; border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 12px; }
+.tb-btn:hover { background: rgba(255,255,255,.3); }
+
+/* MAIN LAYOUT */
+#main { display: flex; height: calc(100vh - 52px); }
+
+/* LEFT: Product panel */
+#left-panel { flex: 1; display: flex; flex-direction: column; background: var(--white); border-right: 1px solid var(--gray4); min-width: 0; }
+#product-search-bar { padding: 10px 12px; border-bottom: 1px solid var(--gray5); display: flex; gap: 8px; }
+#product-search-input { flex: 1; padding: 8px 12px; border: 1px solid var(--gray4); border-radius: var(--radius); font-size: 13px; outline: none; }
+#product-search-input:focus { border-color: var(--blue); }
+.view-toggle { display: flex; border: 1px solid var(--gray4); border-radius: var(--radius); overflow: hidden; }
+.view-btn { padding: 7px 10px; background: none; border: none; cursor: pointer; color: var(--gray3); }
+.view-btn.active { background: var(--blue); color: #fff; }
+
+/* Category filter */
+#cat-filter { display: flex; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--gray5); overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
+#cat-filter::-webkit-scrollbar { display: none; }
+.cat-btn { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--gray4); background: var(--white); font-size: 12px; cursor: pointer; white-space: nowrap; color: var(--gray2); flex-shrink: 0; }
+.cat-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+/* Product grid */
+#product-grid { flex: 1; overflow-y: auto; padding: 10px 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; align-content: start; }
+#product-list { flex: 1; overflow-y: auto; }
+.product-card { border: 1px solid var(--gray4); border-radius: var(--radius); cursor: pointer; overflow: hidden; transition: all .15s; }
+.product-card:hover { border-color: var(--blue); box-shadow: 0 2px 8px rgba(25,118,210,.2); transform: translateY(-1px); }
+.product-card img { width: 100%; height: 90px; object-fit: cover; background: var(--gray5); display: block; }
+.product-card-img-placeholder { width: 100%; height: 90px; background: var(--gray5); display: flex; align-items: center; justify-content: center; font-size: 28px; }
+.product-card-body { padding: 6px 8px; }
+.product-card-name { font-size: 12px; font-weight: 600; line-height: 1.3; height: 32px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.product-card-sku { font-size: 10px; color: var(--gray3); margin-top: 2px; }
+.product-card-price { font-size: 13px; font-weight: 700; color: var(--blue); margin-top: 3px; }
+.product-card-orig { font-size: 10px; color: var(--gray3); text-decoration: line-through; }
+.product-list-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--gray5); cursor: pointer; }
+.product-list-item:hover { background: var(--blue-light); }
+.product-list-img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; background: var(--gray5); flex-shrink: 0; }
+.product-list-info { flex: 1; min-width: 0; }
+
+/* Pagination */
+#pagination { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px; border-top: 1px solid var(--gray5); flex-shrink: 0; }
+#pagination button { width: 32px; height: 32px; border: 1px solid var(--gray4); border-radius: 6px; background: var(--white); cursor: pointer; font-size: 14px; }
+#pagination button:hover { background: var(--blue-light); border-color: var(--blue); }
+#pagination button:disabled { opacity: .4; cursor: default; }
+#page-info { font-size: 13px; color: var(--gray2); }
+
+/* RIGHT: Cart panel */
+#right-panel { width: 360px; min-width: 340px; display: flex; flex-direction: column; background: #fff; }
+
+/* Order form top */
+#order-header { padding: 10px 12px; border-bottom: 1px solid var(--gray5); background: var(--gray5); flex-shrink: 0; }
+.order-field { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.order-field:last-child { margin-bottom: 0; }
+.order-field label { font-size: 11px; color: var(--gray3); white-space: nowrap; width: 60px; flex-shrink: 0; }
+.order-field-val { font-size: 13px; font-weight: 600; flex: 1; }
+.order-field input, .order-field select { flex: 1; padding: 4px 8px; border: 1px solid var(--gray4); border-radius: 5px; font-size: 12px; outline: none; background: var(--white); }
+
+/* Choku */
+#choku-wrap { position: relative; }
+#choku-input { width: 100%; padding: 4px 8px; border: 1px solid var(--gray4); border-radius: 5px; font-size: 12px; outline: none; }
+#choku-input:focus { border-color: var(--blue); }
+#choku-dd { position: absolute; top: calc(100% + 2px); left: 0; right: 0; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); z-index: 100; max-height: 200px; overflow-y: auto; display: none; }
+#choku-dd.show { display: block; }
+.choku-item { padding: 7px 10px; cursor: pointer; border-bottom: 1px solid var(--gray5); }
+.choku-item:hover { background: var(--blue-light); }
+.choku-item-name { font-size: 12px; font-weight: 600; }
+.choku-item-addr { font-size: 10px; color: var(--gray3); }
+
+/* Cart */
+#cart-items { flex: 1; overflow-y: auto; padding: 8px; }
+.cart-group-lbl { font-size: 10px; font-weight: 700; padding: 3px 6px; border-radius: 4px; margin: 6px 0 4px; display: inline-block; }
+.lbl-dry { background: #fff3e0; color: var(--orange); }
+.lbl-cool { background: #e8f5e9; color: var(--green); }
+.lbl-cold { background: #e3f2fd; color: var(--blue); }
+.cart-row { display: flex; align-items: center; gap: 6px; padding: 5px 4px; border-bottom: 1px solid var(--gray5); }
+.cart-row-name { flex: 1; min-width: 0; }
+.cart-row-name strong { font-size: 12px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cart-row-name small { font-size: 10px; color: var(--gray3); }
+.cart-disc { width: 56px; padding: 2px 4px; border: 1px solid #f3c3c3; border-radius: 4px; font-size: 11px; text-align: right; background: var(--red-light); }
+.qty-ctrl { display: flex; align-items: center; gap: 3px; }
+.qty-btn { width: 22px; height: 22px; border: 1px solid var(--gray4); border-radius: 4px; background: var(--white); cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.qty-val { min-width: 26px; text-align: center; font-size: 12px; font-weight: 600; }
+.cart-total { font-size: 12px; font-weight: 700; white-space: nowrap; min-width: 50px; text-align: right; }
+.cart-del { color: var(--gray3); cursor: pointer; padding: 2px 4px; font-size: 16px; }
+.cart-del:hover { color: var(--red); }
+
+/* Summary */
+#summary { border-top: 1px solid var(--gray4); padding: 8px 12px; flex-shrink: 0; background: var(--gray5); }
+.sum-row { display: flex; justify-content: space-between; font-size: 12px; padding: 2px 0; }
+.sum-row.group { font-weight: 600; border-top: 1px solid var(--gray4); margin-top: 3px; padding-top: 4px; }
+.sum-row.total { font-size: 15px; font-weight: 800; border-top: 2px solid var(--gray1); margin-top: 4px; padding-top: 5px; }
+.sum-row.disc { color: var(--red); }
+.sum-label { color: var(--gray2); }
+.sum-val { font-weight: 600; }
+.ship-in, .cod-in { width: 72px; padding: 2px 5px; border: 1px solid var(--gray4); border-radius: 4px; font-size: 11px; text-align: right; }
+.cod-row { background: var(--red-light); border-radius: 4px; padding: 3px 5px; margin: 2px 0; }
+.cod-row .sum-label { color: var(--red); font-weight: 600; }
+
+/* Bottom bar */
+#bottom-bar { display: flex; gap: 6px; padding: 8px 10px; border-top: 1px solid var(--gray4); flex-shrink: 0; }
+#disc-wrap { display: flex; align-items: center; gap: 6px; flex: 1; }
+#disc-wrap label { font-size: 11px; color: var(--gray3); white-space: nowrap; }
+#disc-input { flex: 1; padding: 6px 8px; border: 1px solid var(--gray4); border-radius: var(--radius); font-size: 12px; text-align: right; outline: none; }
+#btn-print { background: var(--blue); color: #fff; border: none; border-radius: var(--radius); padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+#btn-print:hover { background: var(--blue-dark); }
+
+/* Loading */
+#loading { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 999; }
+#loading.hidden { display: none; }
+.spinner { width: 36px; height: 36px; border: 4px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Settings */
+#settings-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+#settings-modal.hidden { display: none; }
+.modal { background: #fff; border-radius: var(--radius); padding: 24px; width: 460px; box-shadow: 0 8px 32px rgba(0,0,0,.2); }
+.modal h2 { margin-bottom: 16px; font-size: 16px; }
+.modal label { font-size: 12px; color: var(--gray3); display: block; margin-bottom: 4px; }
+.modal input { width: 100%; padding: 8px 10px; border: 1px solid var(--gray4); border-radius: 6px; font-size: 13px; margin-bottom: 12px; outline: none; }
+.modal input:focus { border-color: var(--blue); }
+.modal-btns { display: flex; gap: 8px; }
+.btn-primary { background: var(--blue); color: #fff; border: none; border-radius: var(--radius); padding: 9px 18px; font-size: 13px; font-weight: 600; cursor: pointer; flex: 1; }
+.btn-ghost { background: var(--gray5); color: var(--gray2); border: none; border-radius: var(--radius); padding: 9px 18px; font-size: 13px; cursor: pointer; }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: var(--gray4); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="loading"><div class="spinner"></div></div>
+<div id="settings-modal" class="hidden">
+  <div class="modal">
+    <h2>⚙️ Cài đặt kết nối</h2>
+    <label>Google Apps Script URL</label>
+    <input id="setting-url" placeholder="https://script.google.com/macros/s/...">
+    <div class="modal-btns">
+      <button class="btn-primary" onclick="saveSettings()">Lưu & Tải dữ liệu</button>
+      <button class="btn-ghost" onclick="closeSettings()">Hủy</button>
+    </div>
+  </div>
+</div>
+
+<div id="topbar">
+  <h1>🍚 KOME</h1>
+  <div id="customer-search-wrap">
+    <input id="customer-search-input" placeholder="🔍 Tìm khách hàng (F4)" autocomplete="off">
+    <button id="btn-add-customer" title="Thêm tab mới">+</button>
+    <div id="customer-dropdown"></div>
+  </div>
+  <div id="tabs-bar"></div>
+  <div id="topbar-right">
+    <span id="connection-status">● Đang kết nối...</span>
+    <button class="tb-btn" onclick="reloadData()">🔄</button>
+    <button class="tb-btn" onclick="openSettings()">⚙️</button>
+  </div>
+</div>
+
+<div id="main">
+  <!-- LEFT -->
+  <div id="left-panel">
+    <div id="product-search-bar">
+      <input id="product-search-input" placeholder="🔍 Tìm theo SKU, tên Việt hoặc tên Nhật..." autocomplete="off">
+      <div class="view-toggle">
+        <button class="view-btn active" id="btn-grid-view" onclick="setView('grid')" title="Dạng lưới">⊞</button>
+        <button class="view-btn" id="btn-list-view" onclick="setView('list')" title="Dạng danh sách">☰</button>
+      </div>
+    </div>
+    <div id="cat-filter"></div>
+    <div id="product-grid"></div>
+    <div id="product-list" style="display:none;flex:1;overflow-y:auto;"></div>
+    <div id="pagination">
+      <button id="btn-prev" onclick="changePage(-1)">‹</button>
+      <span id="page-info">1 / 1</span>
+      <button id="btn-next" onclick="changePage(1)">›</button>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div id="right-panel">
+    <div id="order-header">
+      <div class="order-field">
+        <label>Khách hàng</label>
+        <span class="order-field-val" id="hdr-customer">― Chưa chọn</span>
+      </div>
+      <div class="order-field">
+        <label>Mã KH</label>
+        <span class="order-field-val" id="hdr-id" style="color:var(--blue)"></span>
+      </div>
+      <div class="order-field">
+        <label>直送先</label>
+        <div id="choku-wrap" style="flex:1;">
+          <input id="choku-input" placeholder="Tìm địa chỉ giao hàng...">
+          <div id="choku-dd"></div>
+        </div>
+      </div>
+      <div class="order-field">
+        <label>時間帯</label>
+        <select id="delivery-time" style="flex:1;padding:4px 8px;border:1px solid var(--gray4);border-radius:5px;font-size:12px;">
+          <option value="">--</option>
+          <option>最短</option><option>午前中</option>
+          <option>12時～14時</option><option>14時～16時</option>
+          <option>16時～18時</option><option>18時～20時</option>
+        </select>
+        <select id="delivery-month" style="width:48px;padding:4px;border:1px solid var(--gray4);border-radius:5px;font-size:12px;">
+          <option value="">月</option>
+          ${[...Array(12)].map((_,i)=>`<option>${i+1}</option>`).join('')}
+        </select>
+        <span style="font-size:11px;">/</span>
+        <select id="delivery-day" style="width:48px;padding:4px;border:1px solid var(--gray4);border-radius:5px;font-size:12px;">
+          <option value="">日</option>
+          ${[...Array(31)].map((_,i)=>`<option>${i+1}</option>`).join('')}
+        </select>
+      </div>
+      <div class="order-field">
+        <label>Ghi chú</label>
+        <input id="order-note" placeholder="Ghi chú đơn hàng..." style="flex:1;">
+      </div>
+    </div>
+
+    <div id="cart-items"></div>
+    <div id="summary"></div>
+
+    <div id="bottom-bar">
+      <div id="disc-wrap">
+        <label>割引</label>
+        <input type="number" id="disc-input" min="0" step="100" value="0" placeholder="0">
+        <span style="font-size:11px;color:var(--gray3);">¥</span>
+      </div>
+      <button id="btn-print" onclick="handlePrint()">🖨 Tạo & In Đơn hàng</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================
+// STATE
+// ============================
+const SHEET_URL_KEY = 'kome_sheet_url';
+const CACHE_KEY = 'kome_data_cache';
+const CACHE_TTL = 5 * 60 * 1000;
+const PAGE_SIZE = 18;
+const TAX10 = ['BS01','BS02','BS04','BS06','HAB05','HAB06','HAL02','HAL03','HAL08','HAL11','LD01','LD02','RV01','RV02','RV03','RV05','RV06','RV07','RV09'];
+
+let sheetUrl = localStorage.getItem(SHEET_URL_KEY) || '';
+let customerData = {}, productData = [], chokuData = [];
+let viewMode = 'grid', currentPage = 1, filteredProducts = [], currentCat = 'all';
+
+// Multi-tab order state
+let tabs = [], activeTabId = null;
+let tabCounter = 0;
+
+function newTab(customer = null) {
+  tabCounter++;
+  const id = 'tab_' + tabCounter;
+  tabs.push({
+    id, customer, choku: null,
+    cart: [], freeShip: { dry: null, cool: null, cold: null },
+    customDaibiki: null, discount: 0,
+    deliveryTime: '', deliveryMonth: '', deliveryDay: '', note: ''
+  });
+  setActiveTab(id);
+  renderTabs();
+  return id;
+}
+
+function getTab() { return tabs.find(t => t.id === activeTabId); }
+
+function setActiveTab(id) {
+  activeTabId = id;
+  renderTabs();
+  renderRightPanel();
+  renderCart();
+  // Sync fields
+  const t = getTab();
+  if (!t) return;
+  document.getElementById('delivery-time').value = t.deliveryTime;
+  document.getElementById('delivery-month').value = t.deliveryMonth;
+  document.getElementById('delivery-day').value = t.deliveryDay;
+  document.getElementById('order-note').value = t.note;
+  document.getElementById('disc-input').value = t.discount;
+  if (t.choku) {
+    document.getElementById('choku-input').value = t.choku.name;
+    document.getElementById('choku-dd').classList.remove('show');
+  } else {
+    document.getElementById('choku-input').value = '';
+  }
+}
+
+function closeTab(id, e) {
+  e && e.stopPropagation();
+  tabs = tabs.filter(t => t.id !== id);
+  if (tabs.length === 0) newTab();
+  else if (activeTabId === id) setActiveTab(tabs[tabs.length - 1].id);
+  renderTabs();
+}
+
+function renderTabs() {
+  const bar = document.getElementById('tabs-bar');
+  if (tabs.length === 0) { bar.innerHTML = ''; return; }
+  bar.innerHTML = tabs.map(t => {
+    const name = t.customer ? (t.customer.name.slice(0, 12) + (t.customer.name.length > 12 ? '…' : '')) : '新規注文';
+    const items = t.cart.reduce((s, i) => s + i.qty, 0);
+    const badge = items > 0 ? ` <span style="background:var(--red);color:#fff;border-radius:10px;padding:1px 5px;font-size:10px;">${items}</span>` : '';
+    return `<div class="tab-item ${t.id === activeTabId ? 'active' : ''}" onclick="setActiveTab('${t.id}')">
+      <span style="overflow:hidden;text-overflow:ellipsis;">${name}${badge}</span>
+      <span class="tab-close" onclick="closeTab('${t.id}',event)">×</span>
+    </div>`;
+  }).join('') + `<button id="btn-new-tab" onclick="newTab()" title="Thêm đơn mới">+</button>`;
+}
+
+// ============================
+// SETTINGS
+// ============================
+function openSettings() { document.getElementById('setting-url').value = sheetUrl; document.getElementById('settings-modal').classList.remove('hidden'); }
+function closeSettings() { document.getElementById('settings-modal').classList.add('hidden'); }
+function saveSettings() {
+  const url = document.getElementById('setting-url').value.trim();
+  if (!url) return alert('Vui lòng nhập URL');
+  sheetUrl = url;
+  localStorage.setItem(SHEET_URL_KEY, url);
+  closeSettings();
+  loadData(true);
+}
+
+// ============================
+// DATA
+// ============================
+async function loadData(force = false) {
+  if (!sheetUrl) { openSettings(); return; }
+  setStatus('loading');
+  showLoading(true);
+  if (!force) {
+    const c = localStorage.getItem(CACHE_KEY);
+    if (c) {
+      try {
+        const { ts, data } = JSON.parse(c);
+        if (Date.now() - ts < CACHE_TTL) { applyData(data); showLoading(false); setStatus('ok'); return; }
+      } catch(e) {}
+    }
+  }
+  try {
+    const json = await fetchJSONP(sheetUrl);
+    if (json.status === 'success') {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: json.data }));
+      applyData(json.data); setStatus('ok');
+    } else setStatus('err', json.message);
+  } catch(e) { setStatus('err', e.message); }
+  showLoading(false);
+}
+
+function fetchJSONP(url) {
+  return new Promise((resolve, reject) => {
+    const cb = 'kome_cb_' + Date.now();
+    const s = document.createElement('script');
+    const t = setTimeout(() => { cleanup(); reject(new Error('Timeout')); }, 15000);
+    window[cb] = d => { cleanup(); resolve(d); };
+    function cleanup() { clearTimeout(t); delete window[cb]; s.parentNode && s.parentNode.removeChild(s); }
+    s.onerror = () => { cleanup(); reject(new Error('Script error')); };
+    s.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;
+    document.head.appendChild(s);
+  });
+}
+
+function applyData(d) {
+  customerData = d.customers || {};
+  productData = (d.products || []);
+  chokuData = (d.chokusetsusaki || []).map(r => ({
+    customerCode: String(r.customerCode || '').trim(),
+    code: String(r.code || '').trim(),
+    name: String(r.name || '').trim(),
+    post: String(r.post || '').trim(),
+    pref: String(r.pref || '').trim(),
+    city: String(r.city || '').trim(),
+    add1: String(r.add1 || '').trim(),
+    add2: String(r.add2 || '').trim(),
+  }));
+  renderCategories();
+  filterProducts('');
+}
+
+function reloadData() { loadData(true); }
+function setStatus(t, m) {
+  const el = document.getElementById('connection-status');
+  if (t === 'ok') { el.textContent = '● 接続済み'; el.className = 'ok'; }
+  else if (t === 'loading') { el.textContent = '● 読み込み中...'; el.className = ''; }
+  else { el.textContent = '● エラー: ' + (m || ''); el.className = 'err'; }
+}
+function showLoading(v) { document.getElementById('loading').className = v ? '' : 'hidden'; }
+
+// ============================
+// CUSTOMER SEARCH
+// ============================
+const csInput = document.getElementById('customer-search-input');
+const csDd = document.getElementById('customer-dropdown');
+
+csInput.addEventListener('input', e => {
+  const q = e.target.value.toLowerCase().trim();
+  if (q.length < 1) { csDd.classList.remove('show'); return; }
+  const results = Object.entries(customerData).filter(([, c]) =>
+    `${c.name||''} ${c.id||''} ${c.pic||''} ${c.tags||''}`.toLowerCase().includes(q)
+  ).slice(0, 15);
+  if (!results.length) { csDd.classList.remove('show'); return; }
+  csDd.innerHTML = results.map(([url, c]) =>
+    `<div class="cust-dd-item" onclick="selectCustomer('${url}')">
+      <div class="cust-dd-name">${c.name || '―'}</div>
+      <div class="cust-dd-sub">Mã: ${c.id||''} · ${c.pic||''}</div>
+    </div>`
+  ).join('');
+  csDd.classList.add('show');
+});
+document.addEventListener('click', e => { if (!e.target.closest('#customer-search-wrap')) csDd.classList.remove('show'); });
+
+function selectCustomer(urlKey) {
+  const c = customerData[urlKey];
+  if (!c) return;
+  csInput.value = '';
+  csDd.classList.remove('show');
+  const t = getTab();
+  if (!t) { newTab({ ...c, urlKey }); return; }
+  t.customer = { ...c, urlKey };
+  t.cart = []; t.choku = null; t.freeShip = { dry: null, cool: null, cold: null }; t.customDaibiki = null; t.discount = 0;
+  setActiveTab(activeTabId);
+  renderChokuSuggestions('');
+}
+
+function renderRightPanel() {
+  const t = getTab();
+  const c = t?.customer;
+  document.getElementById('hdr-customer').textContent = c ? c.name : '― Chưa chọn';
+  document.getElementById('hdr-id').textContent = c ? c.id : '';
+}
+
+// ============================
+// CHOKU
+// ============================
+const chokuInput = document.getElementById('choku-input');
+const chokuDd = document.getElementById('choku-dd');
+
+chokuInput.addEventListener('focus', () => renderChokuSuggestions(''));
+chokuInput.addEventListener('input', e => renderChokuSuggestions(e.target.value));
+document.addEventListener('click', e => { if (!e.target.closest('#choku-wrap')) chokuDd.classList.remove('show'); });
+
+function renderChokuSuggestions(q) {
+  const t = getTab();
+  if (!t?.customer) { chokuDd.classList.remove('show'); return; }
+  const custCode = String(t.customer.id).trim();
+  let items = chokuData.filter(x => String(x.customerCode).trim() === custCode);
+  if (q) items = items.filter(x => `${x.name} ${x.code} ${x.pref}${x.city}${x.add1}`.toLowerCase().includes(q.toLowerCase()));
+  if (!items.length) { chokuDd.classList.remove('show'); return; }
+  chokuDd.innerHTML = items.map(x =>
+    `<div class="choku-item" onclick="selectChoku('${x.code}')">
+      <div class="choku-item-name">📍 ${x.name} <span style="color:var(--gray3);font-weight:400;">(${x.code})</span></div>
+      <div class="choku-item-addr">〒${x.post} ${x.pref}${x.city}${x.add1} ${x.add2}</div>
+    </div>`
+  ).join('');
+  chokuDd.classList.add('show');
+}
+
+function selectChoku(code) {
+  const t = getTab(); if (!t) return;
+  t.choku = chokuData.find(x => x.code === code) || null;
+  chokuDd.classList.remove('show');
+  if (t.choku) chokuInput.value = t.choku.name;
+}
+
+// ============================
+// PRODUCTS
+// ============================
+function renderCategories() {
+  const cats = ['all', ...new Set(productData.map(p => p.category).filter(Boolean))];
+  document.getElementById('cat-filter').innerHTML = cats.map(c =>
+    `<button class="cat-btn ${c === currentCat ? 'active' : ''}" onclick="setCat('${c}')">${c === 'all' ? 'Tất cả' : c}</button>`
+  ).join('');
+}
+
+function setCat(cat) {
+  currentCat = cat; currentPage = 1;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.textContent === (cat === 'all' ? 'Tất cả' : cat)));
+  filterProducts(document.getElementById('product-search-input').value);
+}
+
+function filterProducts(q) {
+  const sq = (q || '').toLowerCase().trim();
+  filteredProducts = productData.filter(p => {
+    const matchCat = currentCat === 'all' || p.category === currentCat;
+    const matchQ = !sq || (p.sku||'').toLowerCase().includes(sq) || (p.name||'').toLowerCase().includes(sq) || (p.nameJP||'').toLowerCase().includes(sq);
+    return matchCat && matchQ;
+  });
+  currentPage = 1;
+  renderProducts();
+}
+
+function changePage(dir) {
+  const total = Math.ceil(filteredProducts.length / PAGE_SIZE);
+  currentPage = Math.max(1, Math.min(total, currentPage + dir));
+  renderProducts();
+}
+
+function setView(v) {
+  viewMode = v;
+  document.getElementById('btn-grid-view').classList.toggle('active', v === 'grid');
+  document.getElementById('btn-list-view').classList.toggle('active', v === 'list');
+  document.getElementById('product-grid').style.display = v === 'grid' ? 'grid' : 'none';
+  document.getElementById('product-list').style.display = v === 'list' ? 'block' : 'none';
+  renderProducts();
+}
+
+function renderProducts() {
+  const total = Math.ceil(filteredProducts.length / PAGE_SIZE) || 1;
+  document.getElementById('page-info').textContent = `${currentPage} / ${total}`;
+  document.getElementById('btn-prev').disabled = currentPage <= 1;
+  document.getElementById('btn-next').disabled = currentPage >= total;
+  const slice = filteredProducts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  if (viewMode === 'grid') {
+    document.getElementById('product-grid').innerHTML = slice.map(p => {
+      const pr = parseFloat((p.price||'').replace(/,/g,'')) || 0;
+      const ps = parseFloat((p.priceSale||'').replace(/,/g,'')) || 0;
+      const fp = ps > 0 && ps < pr ? ps : pr;
+      const imgHtml = p.image ? `<img src="${p.image}" onerror="this.parentNode.innerHTML='<div class=\\'product-card-img-placeholder\\'>📦</div>'" alt="">` : `<div class="product-card-img-placeholder">📦</div>`;
+      return `<div class="product-card" onclick="addToCart('${p.sku}')">
+        ${imgHtml}
+        <div class="product-card-body">
+          <div class="product-card-name">${p.name}</div>
+          <div class="product-card-sku">${p.sku}</div>
+          <div class="product-card-price">¥${fp.toLocaleString('ja-JP')}</div>
+          ${ps > 0 && ps < pr ? `<div class="product-card-orig">¥${pr.toLocaleString('ja-JP')}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('') || '<div style="grid-column:1/-1;text-align:center;color:var(--gray3);padding:40px;">Không tìm thấy sản phẩm</div>';
+  } else {
+    document.getElementById('product-list').innerHTML = slice.map(p => {
+      const pr = parseFloat((p.price||'').replace(/,/g,'')) || 0;
+      const ps = parseFloat((p.priceSale||'').replace(/,/g,'')) || 0;
+      const fp = ps > 0 && ps < pr ? ps : pr;
+      return `<div class="product-list-item" onclick="addToCart('${p.sku}')">
+        <img class="product-list-img" src="${p.image||''}" onerror="this.style.display='none'" alt="">
+        <div class="product-list-info">
+          <div style="font-size:13px;font-weight:600;">${p.name}</div>
+          <div style="font-size:11px;color:var(--gray3);">${p.sku} · ${p.nameJP||''}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-weight:700;color:var(--blue);">¥${fp.toLocaleString('ja-JP')}</div>
+          ${ps > 0 && ps < pr ? `<div style="font-size:10px;text-decoration:line-through;color:var(--gray3);">¥${pr.toLocaleString('ja-JP')}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('') || '<div style="text-align:center;color:var(--gray3);padding:40px;">Không tìm thấy sản phẩm</div>';
+  }
+}
+
+document.getElementById('product-search-input').addEventListener('input', e => filterProducts(e.target.value));
+document.getElementById('product-search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const first = document.querySelector('.product-card') || document.querySelector('.product-list-item');
+    if (first) first.click();
+  }
+});
+
+// ============================
+// CART
+// ============================
+function getShipType(cat) {
+  if (!cat) return 'dry';
+  const c = cat.toLowerCase();
+  if (c.includes('1.đông lạnh') || c.includes('冷凍')) return 'cold';
+  if (c.includes('2.sứa') || c.includes('冷蔵')) return 'cool';
+  return 'dry';
+}
+
+function addToCart(sku) {
+  const t = getTab(); if (!t) return;
+  const p = productData.find(x => x.sku === sku); if (!p) return;
+  const pr = parseFloat((p.price||'').replace(/,/g,'')) || 0;
+  const ps = parseFloat((p.priceSale||'').replace(/,/g,'')) || 0;
+  const fp = ps > 0 && ps < pr ? ps : pr;
+  const isXot = (p.category||'').toLowerCase().includes('xốt');
+  const qty = isXot ? 0.25 : 1;
+  const ex = t.cart.find(x => x.sku === sku);
+  if (ex) ex.qty = Math.round((ex.qty + qty) * 100) / 100;
+  else t.cart.push({ sku: p.sku, name: p.name, nameJP: p.nameJP||'', price: fp, originalPrice: pr, qty, isXot, shippingType: getShipType(p.category||''), discount: 0 });
+  renderCart();
+  renderTabs();
+}
+
+function renderCart() {
+  const t = getTab();
+  const cartEl = document.getElementById('cart-items');
+  const sumEl = document.getElementById('summary');
+  if (!t || !t.cart.length) {
+    cartEl.innerHTML = '<div style="text-align:center;color:var(--gray3);padding:24px;font-size:12px;">Giỏ hàng đang trống...</div>';
+    sumEl.innerHTML = '';
+    return;
+  }
+
+  const groups = [
+    { key: 'dry',  label: '常温品 (Hàng Khô)', cls: 'lbl-dry' },
+    { key: 'cool', label: '冷蔵品 (Hàng Mát)', cls: 'lbl-cool' },
+    { key: 'cold', label: '冷凍品 (Hàng Lạnh)', cls: 'lbl-cold' },
+  ];
+
+  let cartHtml = '', sumHtml = '', subTotalAll = 0;
+
+  groups.forEach(g => {
+    const items = t.cart.filter(x => x.shippingType === g.key);
+    if (!items.length) return;
+    cartHtml += `<span class="cart-group-lbl ${g.cls}">${g.label}</span>`;
+    let sub = 0, crates = 0;
+    items.forEach(item => {
+      const ep = item.price - (item.discount || 0);
+      const total = Math.round(item.isXot ? ep * (item.qty / 0.25) : ep * item.qty);
+      sub += total; crates += item.qty;
+      cartHtml += `<div class="cart-row">
+        <div class="cart-row-name"><strong>${item.name}</strong><small>${item.sku}</small></div>
+        <input type="number" class="cart-disc" data-sku="${item.sku}" value="${item.discount||''}" placeholder="¥off" min="0" oninput="updateDisc('${item.sku}',this.value)">
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="chgQty('${item.sku}',-1)">−</button>
+          <span class="qty-val">${item.qty}</span>
+          <button class="qty-btn" onclick="chgQty('${item.sku}',1)">+</button>
+        </div>
+        <span class="cart-total">¥${total.toLocaleString('ja-JP')}</span>
+        <span class="cart-del" onclick="delItem('${item.sku}')">×</span>
+      </div>`;
+    });
+    const defShip = sub < 20000 ? crates * 500 : 0;
+    const ship = t.freeShip[g.key] !== null ? t.freeShip[g.key] : defShip;
+    const gt = sub + ship; subTotalAll += gt;
+    sumHtml += `<div class="sum-row"><span class="sum-label">${g.label} — 商品</span><span>¥${sub.toLocaleString('ja-JP')}</span></div>
+<div class="sum-row"><span class="sum-label">　送料 <input type="number" class="ship-in" data-type="${g.key}" value="${ship}" min="0" step="100" oninput="updateShip('${g.key}',this.value)"></span><span class="${ship>0?'sum-val':''}">¥${ship.toLocaleString('ja-JP')}</span></div>
+<div class="sum-row group"><span>小計</span><span>¥${gt.toLocaleString('ja-JP')}</span></div>`;
+  });
+
+  cartEl.innerHTML = cartHtml;
+
+  // COD
+  let codFee = 0;
+  if (t.customer?.seikyu === '代引請求') {
+    const def = subTotalAll >= 20000 ? 300 : 330;
+    codFee = t.customDaibiki !== null ? t.customDaibiki : def;
+    sumHtml += `<div class="sum-row cod-row"><span class="sum-label">代引き手数料 <input type="number" class="cod-in" value="${codFee}" min="0" step="10" oninput="updateCod(this.value)"></span><span style="color:var(--red);font-weight:600;">¥${codFee.toLocaleString('ja-JP')}</span></div>`;
+  }
+
+  t.discount = parseInt(document.getElementById('disc-input').value) || 0;
+  const finalTotal = Math.max(0, subTotalAll + codFee - t.discount);
+
+  // Tax
+  const gTax = (items, rate) => { const g = items.reduce((s,i) => s+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0); return Math.floor(g*rate/(100+rate)); };
+  const tax8 = ['dry','cool','cold'].reduce((s,tp) => s + gTax(t.cart.filter(i=>!TAX10.includes(i.sku)&&i.shippingType===tp),8), 0);
+  const calcShip = (items, tp) => { if(t.freeShip[tp]!==null) return t.freeShip[tp]; const s=items.reduce((a,i)=>a+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0); return s<20000?items.reduce((a,i)=>a+i.qty,0)*500:0; };
+  let tax10 = ['dry','cool','cold'].reduce((s,tp) => s + gTax(t.cart.filter(i=>TAX10.includes(i.sku)&&i.shippingType===tp),10), 0);
+  tax10 += ['dry','cool','cold'].reduce((s,tp) => s + Math.floor(calcShip(t.cart.filter(x=>x.shippingType===tp),tp)*10/110), 0);
+  if (codFee > 0) tax10 += Math.floor(codFee*10/110);
+  const tax = tax8 + tax10;
+
+  if (t.discount > 0) sumHtml += `<div class="sum-row disc"><span>割引 (Giảm giá)</span><span>-¥${t.discount.toLocaleString('ja-JP')}</span></div>`;
+  sumHtml += `<div class="sum-row"><span class="sum-label">消費税</span><span>¥${tax.toLocaleString('ja-JP')}</span></div>`;
+  sumHtml += `<div class="sum-row total"><span>TỔNG CỘNG (合計)</span><span>¥${finalTotal.toLocaleString('ja-JP')}</span></div>`;
+  sumEl.innerHTML = sumHtml;
+}
+
+function updateDisc(sku, v) { const t=getTab(); const i=t?.cart.find(x=>x.sku===sku); if(i){i.discount=parseFloat(v)||0;} renderCart(); }
+function chgQty(sku, d) { const t=getTab(); if(!t) return; const i=t.cart.find(x=>x.sku===sku); if(!i) return; const s=i.isXot?.25:1; i.qty=Math.round((i.qty+d*s)*100)/100; if(i.qty<=0) t.cart=t.cart.filter(x=>x.sku!==sku); renderCart(); renderTabs(); }
+function delItem(sku) { const t=getTab(); if(!t) return; t.cart=t.cart.filter(x=>x.sku!==sku); renderCart(); renderTabs(); }
+function updateShip(tp, v) { const t=getTab(); if(!t) return; t.freeShip[tp]=parseFloat(v)||0; renderCart(); }
+function updateCod(v) { const t=getTab(); if(!t) return; t.customDaibiki=parseFloat(v)||0; renderCart(); }
+document.getElementById('disc-input').addEventListener('input', () => renderCart());
+
+// Save note/time on change
+['delivery-time','delivery-month','delivery-day','order-note'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => {
+    const t = getTab(); if (!t) return;
+    t.deliveryTime = document.getElementById('delivery-time').value;
+    t.deliveryMonth = document.getElementById('delivery-month').value;
+    t.deliveryDay = document.getElementById('delivery-day').value;
+    t.note = document.getElementById('order-note').value;
+  });
+});
+document.getElementById('order-note').addEventListener('input', () => { const t=getTab(); if(t) t.note=document.getElementById('order-note').value; });
+
+// ============================
+// PRINT
+// ============================
+function handlePrint() {
+  const t = getTab();
+  if (!t?.cart.length) { alert('Giỏ hàng đang trống!'); return; }
+  if (!t.customer) { alert('Chưa chọn khách hàng!'); return; }
+
+  const dm = document.getElementById('delivery-month').value;
+  const dd = document.getElementById('delivery-day').value;
+  const dt = document.getElementById('delivery-time').value;
+  const nt = document.getElementById('order-note').value;
+  const deliveryDate = (dm && dd) ? `${dm}/${dd}` : '';
+  const noteParts = [];
+  if (deliveryDate) noteParts.push(`【希望納品日: ${deliveryDate}】`);
+  if (dt) noteParts.push(`【時間帯: ${dt}】`);
+  if (nt) noteParts.push(nt);
+  const orderNote = noteParts.join(' ');
+
+  let deliveryCode = '', deliveryName = '', deliveryAddress = '';
+  if (t.choku) {
+    const s = t.choku;
+    deliveryCode = s.code; deliveryName = s.name;
+    deliveryAddress = `〒${s.post} ${s.pref}${s.city}${s.add1} ${s.add2}`.trim();
+  } else {
+    const typed = document.getElementById('choku-input').value.trim();
+    if (typed) deliveryCode = typed;
+  }
+
+  const groups = [
+    { key:'dry',  label:'常温品 (Hàng Khô)', cls:'group-dry' },
+    { key:'cool', label:'冷蔵品 (Hàng Mát)', cls:'group-cool' },
+    { key:'cold', label:'冷凍品 (Hàng Lạnh)', cls:'group-cold' },
+  ];
+  const calcShip = (items, tp) => { if(t.freeShip[tp]!==null) return t.freeShip[tp]; const s=items.reduce((a,i)=>a+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0); return s<20000?items.reduce((a,i)=>a+i.qty,0)*500:0; };
+
+  let allHtml = '', grandTotal = 0, allCrates = 0;
+  groups.forEach(g => {
+    const items = t.cart.filter(x => x.shippingType === g.key);
+    if (!items.length) return;
+    let sub=0, crates=0, rn=0, rows='';
+    items.forEach(item => {
+      rn++;
+      const ep = item.price-(item.discount||0);
+      const tot = Math.round(item.isXot ? ep*(item.qty/0.25) : ep*item.qty);
+      sub+=tot; crates+=item.qty;
+      let pc = `¥${ep.toLocaleString('ja-JP')}`;
+      if (ep < item.originalPrice) pc += `<br><small style="text-decoration:line-through;color:#999;">(¥${item.originalPrice.toLocaleString('ja-JP')})</small>`;
+      rows += `<tr><td style="text-align:center;color:#666;">${rn}</td><td>${item.sku}</td><td>${item.name}<br><small>${item.nameJP}</small></td><td style="text-align:right;">${item.qty}</td><td>${pc}</td><td style="text-align:right;">¥${tot.toLocaleString('ja-JP')}</td></tr>`;
+    });
+    const ship = calcShip(items, g.key);
+    const gt = sub + ship; grandTotal += gt; allCrates += crates;
+    allHtml += `<div class="gt ${g.cls}">${g.label}</div>
+<table class="dt"><thead><tr><th style="width:5%">行</th><th style="width:10%">コード</th><th style="width:43%">商品名</th><th style="width:13%">数量(ケース)</th><th style="width:12%">単価(標準)</th><th style="width:17%">金額</th></tr></thead>
+<tbody>${rows}
+<tr style="border-top:2px solid #333;"><td colspan="3" style="border:none;"></td><td colspan="2" class="sl">商品合計 (ケース数: ${crates})</td><td class="sv">¥${sub.toLocaleString('ja-JP')}</td></tr>
+<tr><td colspan="3" style="border:none;"></td><td colspan="2" class="sl">送料</td><td class="sv">¥${ship.toLocaleString('ja-JP')}</td></tr>
+<tr><td colspan="3" style="border:none;"></td><td colspan="2" class="sl total">小計 (${g.label})</td><td class="sv total">¥${gt.toLocaleString('ja-JP')}</td></tr>
+</tbody></table>`;
+  });
+
+  const gTax = (items, rate) => { const g=items.reduce((s,i)=>s+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0); return Math.floor(g*rate/(100+rate)); };
+  const tax8 = ['dry','cool','cold'].reduce((s,tp)=>s+gTax(t.cart.filter(i=>!TAX10.includes(i.sku)&&i.shippingType===tp),8),0);
+  let tax10 = ['dry','cool','cold'].reduce((s,tp)=>s+gTax(t.cart.filter(i=>TAX10.includes(i.sku)&&i.shippingType===tp),10),0);
+  tax10 += ['dry','cool','cold'].reduce((s,tp)=>s+Math.floor(calcShip(t.cart.filter(x=>x.shippingType===tp),tp)*10/110),0);
+  let codFee=0, codHtml='';
+  if (t.customer?.seikyu==='代引請求') {
+    const def = grandTotal >= 20000 ? 300 : 330;
+    codFee = t.customDaibiki!==null ? t.customDaibiki : def;
+    tax10 += Math.floor(codFee*10/110);
+    codHtml = `<tr class="cod"><td class="tl">代引き手数料</td><td></td><td class="tv" style="color:#c0392b;">¥${codFee.toLocaleString('ja-JP')}</td></tr>`;
+  }
+  const tax = tax8 + tax10;
+  const disc = t.discount || 0;
+  const finalTotal = Math.max(0, grandTotal + codFee - disc);
+  const discHtml = disc > 0 ? `<tr><td class="tl">割引 (Giảm giá)</td><td></td><td class="tv" style="color:#c0392b;">-¥${disc.toLocaleString('ja-JP')}</td></tr>` : '';
+  const c = t.customer;
+
+  const html = `<html><head><title>注文書 - ${c.name}</title><meta charset="UTF-8"><style>
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;margin:0;font-size:8pt;color:#000;background:#f4f4f4}
+#inv{max-width:1000px;margin:0 auto;padding:15px;background:#fff}
+h1{font-size:14pt;text-align:center;margin:5px 0 20px}
+table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:4px 5px;vertical-align:middle;line-height:1.3}
+.ht .lb{background:#f9f9f9;text-align:center;font-weight:bold;width:15%}.ht .vl{width:35%}.ht .sep{border:none;padding:3px 0;height:3px}
+.gt{font-size:8pt;font-weight:bold;margin:20px 0 8px;border-bottom:2px solid #000;padding-bottom:4px}
+.group-dry{border-color:#e65100}.group-cool{border-color:#2e7d32}.group-cold{border-color:#1565c0}
+.dt th{background:#444;color:#fff;padding:5px;text-align:center;white-space:nowrap;font-size:8pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.dt tbody tr:nth-child(even){background:#f9f9f9}.dt small{font-size:7pt;color:#555}
+.sl{text-align:right;background:#f9f9f9;font-size:8pt;font-weight:bold}.sv{text-align:right;font-size:10pt;font-weight:bold}
+.sl.total{background:#eee;font-size:9pt}.sv.total{background:#eee;font-size:12pt;font-weight:900}
+.ft{margin-top:20px;width:100%}.ft td{border:1px solid #ddd;padding:6px 10px;font-size:9pt;font-weight:bold}
+.tl{text-align:right;background:#f9f9f9;width:55%}.tv{text-align:right;width:25%;font-size:11pt;font-weight:900}
+.cod td{background:#fff3f3;border-color:#f3c3c3}
+.ns{border:1px solid #ccc;border-radius:4px;overflow:hidden;margin-bottom:14px}
+.ns .lb{font-weight:bold;font-size:9pt;padding:4px 8px;background:#f9f9f9;border-bottom:1px solid #ddd}
+.ns .cnt{padding:5px 8px;white-space:pre-wrap;font-size:9pt}
+@media print{body{background:#fff}#inv{box-shadow:none}.np{display:none}}
+</style></head><body>
+<button class="np" onclick="window.print()" style="padding:10px 20px;font-size:16px;margin:10px;cursor:pointer;">🖨 In Hóa Đơn</button>
+<div id="inv">
+<h1>注 文 請 書 (小売店専用 / ケース販売)</h1>
+<table class="ht">
+<tr><td class="lb">得意先コード</td><td class="vl">${c.id}</td><td class="lb">日付</td><td class="vl">${new Date().toLocaleDateString('ja-JP')}</td></tr>
+<tr><td class="lb">会社名</td><td class="vl" colspan="3">${c.name}</td></tr>
+<tr><td class="lb">住所</td><td class="vl" colspan="3">${c.address||''}</td></tr>
+<tr><td colspan="4" class="sep"></td></tr>
+<tr><td class="lb">納品先コード</td><td class="vl">${deliveryCode}</td><td class="lb">納品先名</td><td class="vl">${deliveryName}</td></tr>
+<tr><td class="lb">住所</td><td class="vl" colspan="3">${deliveryAddress}</td></tr>
+<tr><td colspan="4" class="sep"></td></tr>
+<tr><td class="lb">営業担当</td><td class="vl">${c.pic||''}</td><td class="lb">役職</td><td class="vl"></td></tr>
+</table>
+<div style="text-align:center;font-weight:bold;margin:20px 0 10px;font-size:11pt;">明 細</div>
+<div class="ns"><div class="lb">補足事項</div><div class="cnt">${orderNote.replace(/\n/g,'<br>')}</div></div>
+${allHtml}
+<table class="ft">${codHtml}${discHtml}
+<tr><td class="tl">消費税額</td><td style="width:20%;text-align:center;background:#f9f9f9;"></td><td class="tv">¥${tax.toLocaleString('ja-JP')}</td></tr>
+<tr><td class="tl">合 計</td><td style="text-align:center;background:#f9f9f9;">${allCrates} ケース</td><td class="tv"><strong>¥${finalTotal.toLocaleString('ja-JP')}</strong></td></tr>
+</table></div></body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html); w.document.close(); w.focus();
+  setTimeout(() => w.print(), 500);
+
+  // Save to sheet
+  if (sheetUrl) {
+    fetch(sheetUrl, { method:'POST', body: JSON.stringify({ action:'saveOrder', data:{
+      customerId:c.id, customerName:c.name, address:c.address||'', chokuId:deliveryCode, chokuName:deliveryName, staff:c.pic||'',
+      items: t.cart.map(item => { const ep=item.price-(item.discount||0); return {sku:item.sku,name:item.name,nameJP:item.nameJP,qty:item.qty,price:item.price,discount:item.discount||0,total:Math.round(item.isXot?ep*(item.qty/.25):ep*item.qty)}; }),
+      shippingFee: ['dry','cool','cold'].reduce((s,tp)=>s+calcShip(t.cart.filter(x=>x.shippingType===tp),tp),0),
+      codFee, discount:disc, tax:tax, grandTotal:finalTotal, deliveryTime:dt, deliveryDate, note:nt
+    }})}).catch(()=>{});
+  }
+}
+
+// ============================
+// KEYBOARD SHORTCUTS
+// ============================
+document.addEventListener('keydown', e => {
+  if (e.key === 'F4') { e.preventDefault(); document.getElementById('customer-search-input').focus(); }
+  if (e.key === 'F3') { e.preventDefault(); document.getElementById('product-search-input').focus(); }
+});
+
+// ============================
+// INIT
+// ============================
+window.addEventListener('DOMContentLoaded', () => {
+  newTab();
+  if (sheetUrl) loadData();
+  else openSettings();
+});
+</script>
+</body>
+</html>
