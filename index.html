@@ -286,7 +286,10 @@ const CACHE_KEY = 'kome_data_cache';
 const CACHE_TTL = 5 * 60 * 1000;
 const PAGE_SIZE = 18;
 const TAX10 = ['BS01','BS02','BS04','BS06','HAB05','HAB06','HAL02','HAL03','HAL08','HAL11','LD01','LD02','RV01','RV02','RV03','RV05','RV06','RV07','RV09'];
-
+function toNum(v) {
+  if (v === null || v === undefined) return 0;
+  return parseFloat(String(v).replace(/,/g, '')) || 0;
+}
 let sheetUrl = localStorage.getItem(SHEET_URL_KEY) || '';
 let customerData = {}, productData = [], chokuData = [];
 let viewMode = 'grid', currentPage = 1, filteredProducts = [], currentCat = 'all';
@@ -560,8 +563,8 @@ function renderProducts() {
 
   if (viewMode === 'grid') {
     document.getElementById('product-grid').innerHTML = slice.map(p => {
-      const pr = parseFloat((p.price||'').replace(/,/g,'')) || 0;
-      const ps = parseFloat((p.priceSale||'').replace(/,/g,'')) || 0;
+      const pr = toNum(p.price);
+const ps = toNum(p.priceSale);
       const fp = ps > 0 && ps < pr ? ps : pr;
       const imgHtml = p.image ? `<img src="${p.image}" onerror="this.parentNode.innerHTML='<div class=\\'product-card-img-placeholder\\'>📦</div>'" alt="">` : `<div class="product-card-img-placeholder">📦</div>`;
       return `<div class="product-card" onclick="addToCart('${p.sku}')">
@@ -576,8 +579,8 @@ function renderProducts() {
     }).join('') || '<div style="grid-column:1/-1;text-align:center;color:var(--gray3);padding:40px;">Không tìm thấy sản phẩm</div>';
   } else {
     document.getElementById('product-list').innerHTML = slice.map(p => {
-      const pr = parseFloat((p.price||'').replace(/,/g,'')) || 0;
-      const ps = parseFloat((p.priceSale||'').replace(/,/g,'')) || 0;
+      const pr = toNum(p.price);
+const ps = toNum(p.priceSale);
       const fp = ps > 0 && ps < pr ? ps : pr;
       return `<div class="product-list-item" onclick="addToCart('${p.sku}')">
         <img class="product-list-img" src="${p.image||''}" onerror="this.style.display='none'" alt="">
@@ -616,8 +619,8 @@ function getShipType(cat) {
 function addToCart(sku) {
   const t = getTab(); if (!t) return;
   const p = productData.find(x => x.sku === sku); if (!p) return;
-  const pr = parseFloat((p.price||'').replace(/,/g,'')) || 0;
-  const ps = parseFloat((p.priceSale||'').replace(/,/g,'')) || 0;
+  const pr = toNum(p.price);
+const ps = toNum(p.priceSale);
   const fp = ps > 0 && ps < pr ? ps : pr;
   const isXot = (p.category||'').toLowerCase().includes('xốt');
   const qty = isXot ? 0.25 : 1;
