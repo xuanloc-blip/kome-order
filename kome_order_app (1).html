@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KOME 受注システム</title>
+<style>
+  :root {
+    --red: #c0392b;
+    --red-light: #fff0f0;
+    --red-border: #e0b0b0;
+    --blue: #1565c0;
+    --green: #2e7d32;
+    --orange: #e65100;
+    --gray-1: #1a1a1a;
+    --gray-2: #444;
+    --gray-3: #888;
+    --gray-4: #ccc;
+    --gray-5: #f5f5f5;
+    --bg: #f0f2f5;
+    --white: #fff;
+    --shadow: 0 2px 8px rgba(0,0,0,0.1);
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif; background: var(--bg); color: var(--gray-1); font-size: 14px; }
+
+  /* Layout */
+  #app { display: flex; height: 100vh; overflow: hidden; }
+  #sidebar { width: 300px; min-width: 300px; background: var(--white); border-right: 1px solid var(--gray-4); display: flex; flex-direction: column; }
+  #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Header */
+  #header { background: var(--gray-1); color: var(--white); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+  #header h1 { font-size: 16px; font-weight: 700; letter-spacing: 1px; }
+  #header-status { font-size: 12px; color: var(--gray-4); }
+  #header-status.ok { color: #4caf50; }
+  #header-status.err { color: #ff5252; }
+
+  /* Sidebar — Customer search */
+  #sidebar-header { padding: 12px; border-bottom: 1px solid var(--gray-5); }
+  #sidebar-header h2 { font-size: 13px; color: var(--gray-3); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  #customer-search { width: 100%; padding: 8px 10px; border: 1px solid var(--gray-4); border-radius: var(--radius); font-size: 13px; outline: none; }
+  #customer-search:focus { border-color: var(--blue); }
+  #customer-list { flex: 1; overflow-y: auto; }
+  .customer-item { padding: 10px 14px; border-bottom: 1px solid var(--gray-5); cursor: pointer; transition: background 0.1s; }
+  .customer-item:hover { background: #e8f4ff; }
+  .customer-item.active { background: #e8f4ff; border-left: 3px solid var(--blue); }
+  .customer-item-name { font-weight: 600; font-size: 13px; }
+  .customer-item-sub { font-size: 11px; color: var(--gray-3); margin-top: 2px; }
+
+  /* Main content */
+  #main-content { flex: 1; overflow-y: auto; padding: 16px; display: grid; grid-template-columns: 1fr 380px; gap: 16px; align-items: start; }
+
+  /* Cards */
+  .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; }
+  .card-title { font-size: 12px; font-weight: 700; color: var(--gray-3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+
+  /* Customer info */
+  #customer-info-card .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .info-item label { font-size: 11px; color: var(--gray-3); }
+  .info-item value { font-size: 13px; font-weight: 600; display: block; }
+
+  /* Product search */
+  #product-search { width: 100%; padding: 8px 10px; border: 1px solid var(--gray-4); border-radius: var(--radius); font-size: 13px; outline: none; margin-bottom: 8px; }
+  #product-search:focus { border-color: var(--blue); }
+  #product-results { max-height: 280px; overflow-y: auto; }
+  .product-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; }
+  .product-item:hover { background: var(--gray-5); }
+  .product-item img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; background: var(--gray-5); }
+  .product-item-info { flex: 1; min-width: 0; }
+  .product-item-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .product-item-sku { font-size: 11px; color: var(--gray-3); }
+  .product-item-price { font-size: 13px; font-weight: 700; color: var(--red); white-space: nowrap; }
+  .price-orig { font-size: 11px; color: var(--gray-3); text-decoration: line-through; }
+
+  /* 直送先 */
+  #choku-search { width: 100%; padding: 8px 10px; border: 1px solid var(--gray-4); border-radius: var(--radius); font-size: 13px; outline: none; margin-bottom: 6px; }
+  #choku-search:focus { border-color: var(--blue); }
+  #choku-results { max-height: 180px; overflow-y: auto; }
+  .choku-item { padding: 8px 10px; border-radius: 6px; cursor: pointer; border-bottom: 1px solid var(--gray-5); }
+  .choku-item:hover { background: #e8f4ff; }
+  .choku-item-name { font-weight: 600; font-size: 13px; }
+  .choku-item-addr { font-size: 11px; color: var(--gray-3); }
+  #choku-selected { background: #e8f4fd; border: 1px solid #90caf9; border-radius: 6px; padding: 8px 10px; font-size: 12px; display: none; }
+  #choku-selected.show { display: block; }
+  .choku-clear { font-size: 11px; color: var(--red); cursor: pointer; float: right; }
+
+  /* Right panel */
+  #right-panel { display: flex; flex-direction: column; gap: 12px; }
+
+  /* Cart */
+  #cart-empty { text-align: center; color: var(--gray-3); padding: 24px; font-size: 13px; }
+  .cart-group-title { font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; }
+  .cart-group-dry  { background: #fff3e0; color: var(--orange); }
+  .cart-group-cool { background: #e8f5e9; color: var(--green); }
+  .cart-group-cold { background: #e3f2fd; color: var(--blue); }
+  .cart-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--gray-5); }
+  .cart-item-name { flex: 1; min-width: 0; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cart-item-sku { font-size: 10px; color: var(--gray-3); }
+  .cart-item-price { font-size: 12px; color: var(--gray-2); white-space: nowrap; }
+  .cart-qty-ctrl { display: flex; align-items: center; gap: 4px; }
+  .cart-qty-ctrl button { width: 22px; height: 22px; border: 1px solid var(--gray-4); border-radius: 4px; background: var(--white); cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+  .cart-qty-ctrl span { min-width: 24px; text-align: center; font-size: 12px; font-weight: 600; }
+  .cart-del { color: var(--gray-3); cursor: pointer; font-size: 16px; padding: 0 4px; }
+  .cart-del:hover { color: var(--red); }
+  .cart-discount-input { width: 64px; padding: 2px 4px; border: 1px solid var(--red-border); border-radius: 4px; font-size: 11px; text-align: right; background: var(--red-light); }
+
+  /* Summary */
+  .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 13px; }
+  .summary-row.group-total { font-weight: 600; border-top: 1px solid var(--gray-5); margin-top: 4px; padding-top: 6px; }
+  .summary-row.total { font-size: 16px; font-weight: 800; color: var(--gray-1); border-top: 2px solid var(--gray-1); margin-top: 8px; padding-top: 8px; }
+  .summary-row.discount { color: var(--red); }
+  .summary-label { color: var(--gray-2); }
+  .summary-value { font-weight: 600; }
+  .summary-value.red { color: var(--red); }
+  .ship-input, .cod-input, .disc-input { width: 80px; padding: 3px 6px; border: 1px solid var(--gray-4); border-radius: 4px; font-size: 12px; text-align: right; }
+
+  /* Note section */
+  .note-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .note-row select, .note-row input { padding: 5px 8px; border: 1px solid var(--gray-4); border-radius: 6px; font-size: 12px; outline: none; }
+  .note-row select:focus, .note-row input:focus { border-color: var(--blue); }
+  #order-note-textarea { width: 100%; padding: 8px; border: 1px solid var(--gray-4); border-radius: 6px; font-size: 12px; resize: vertical; min-height: 50px; outline: none; }
+  #order-note-textarea:focus { border-color: var(--blue); }
+
+  /* Buttons */
+  .btn { padding: 10px 20px; border-radius: var(--radius); font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-primary { background: var(--red); color: var(--white); width: 100%; }
+  .btn-primary:hover { background: #a93226; }
+  .btn-ghost { background: var(--gray-5); color: var(--gray-2); }
+  .btn-ghost:hover { background: var(--gray-4); }
+  .btn-row { display: flex; gap: 8px; }
+  .btn-row .btn { flex: 1; }
+
+  /* Loading overlay */
+  #loading { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 999; }
+  #loading.hidden { display: none; }
+  .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top-color: var(--white); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Empty state */
+  .empty-state { text-align: center; color: var(--gray-3); padding: 40px 20px; }
+  .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+
+  /* Settings modal */
+  #settings-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+  #settings-modal.hidden { display: none; }
+  .modal-box { background: var(--white); border-radius: var(--radius); padding: 24px; width: 480px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+  .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+  .modal-field label { font-size: 12px; color: var(--gray-3); margin-bottom: 4px; display: block; }
+  .modal-field input { width: 100%; padding: 8px 10px; border: 1px solid var(--gray-4); border-radius: 6px; font-size: 13px; margin-bottom: 12px; outline: none; }
+  .modal-field input:focus { border-color: var(--blue); }
+
+  /* Tax badge */
+  .tax-badge { font-size: 9px; background: var(--gray-5); color: var(--gray-3); padding: 1px 4px; border-radius: 3px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--gray-4); border-radius: 3px; }
+
+  @media print { #app { display: none; } }
+</style>
+</head>
+<body>
+
+<div id="loading"><div class="spinner"></div></div>
+
+<div id="settings-modal" class="hidden">
+  <div class="modal-box">
+    <div class="modal-title">⚙️ Cài đặt</div>
+    <div class="modal-field">
+      <label>Google Apps Script URL</label>
+      <input id="setting-url" placeholder="https://script.google.com/macros/s/...">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveSettings()">Lưu & Tải dữ liệu</button>
+      <button class="btn btn-ghost" onclick="closeSettings()">Hủy</button>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <h2>Khách hàng</h2>
+      <input id="customer-search" placeholder="🔍 Tìm tên, mã KH, phụ trách..." autocomplete="off">
+    </div>
+    <div id="customer-list">
+      <div class="empty-state"><div class="empty-state-icon">👥</div>Đang tải dữ liệu...</div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div id="main">
+    <div id="header">
+      <h1>🍚 KOME 受注システム</h1>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span id="header-status">● Đang kết nối...</span>
+        <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px;" onclick="openSettings()">⚙️ Cài đặt</button>
+        <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px;" onclick="reloadData()">🔄 Tải lại</button>
+      </div>
+    </div>
+
+    <div id="main-content">
+      <!-- Left: Order form -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+
+        <!-- Customer info -->
+        <div class="card" id="customer-info-card">
+          <div class="card-title">Thông tin khách hàng</div>
+          <div id="customer-info-body">
+            <div class="empty-state" style="padding:16px;">
+              <div>← Chọn khách hàng từ danh sách</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 直送先 -->
+        <div class="card">
+          <div class="card-title">Địa chỉ giao hàng 直送先 <span style="font-weight:400;text-transform:none;font-size:11px;">(nếu khác địa chỉ mặc định)</span></div>
+          <input id="choku-search" placeholder="Tìm theo tên / mã / địa chỉ..." autocomplete="off">
+          <div id="choku-results"></div>
+          <div id="choku-selected"></div>
+        </div>
+
+        <!-- Product search -->
+        <div class="card">
+          <div class="card-title">Thêm sản phẩm</div>
+          <input id="product-search" placeholder="🔍 Tìm theo SKU, tên Việt hoặc tên Nhật..." autocomplete="off">
+          <div id="product-results"></div>
+        </div>
+
+        <!-- Note -->
+        <div class="card">
+          <div class="card-title">補足事項</div>
+          <div class="note-row">
+            <select id="delivery-time">
+              <option value="">-- 時間帯 --</option>
+              <option>最短</option><option>午前中</option>
+              <option>12時～14時</option><option>14時～16時</option>
+              <option>16時～18時</option><option>18時～20時</option>
+            </select>
+            <select id="delivery-month" style="width:56px;">
+              <option value="">月</option>
+              ${Array.from({length:12},(_,i)=>`<option>${i+1}</option>`).join('')}
+            </select>
+            <span style="font-size:12px;">/</span>
+            <select id="delivery-day" style="width:56px;">
+              <option value="">日</option>
+              ${Array.from({length:31},(_,i)=>`<option>${i+1}</option>`).join('')}
+            </select>
+          </div>
+          <textarea id="order-note-textarea" placeholder="Ghi chú đơn hàng..."></textarea>
+        </div>
+
+      </div>
+
+      <!-- Right: Cart + Summary -->
+      <div id="right-panel">
+
+        <!-- Cart -->
+        <div class="card">
+          <div class="card-title" style="display:flex;justify-content:space-between;">
+            <span>Giỏ hàng</span>
+            <button class="btn btn-ghost" style="padding:2px 8px;font-size:11px;" onclick="clearCart()">🗑 Xóa</button>
+          </div>
+          <div id="cart-body"><div id="cart-empty" class="empty-state" style="padding:16px;font-size:12px;">Giỏ hàng đang trống...</div></div>
+        </div>
+
+        <!-- Summary -->
+        <div class="card" id="summary-card" style="display:none;">
+          <div class="card-title">Tổng kết</div>
+          <div id="summary-body"></div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card">
+          <div class="card-title">割引 (Giảm giá đơn)</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <input type="number" id="order-discount" class="disc-input" style="width:100px;" min="0" step="100" placeholder="0" value="0">
+            <span style="font-size:12px;color:var(--gray-3);">¥</span>
+          </div>
+          <button class="btn btn-primary" onclick="handlePrint()">🖨 Tạo & In Đơn hàng</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// =============================================
+// CONFIG
+// =============================================
+const SHEET_URL_KEY = 'kome_sheet_url';
+const DATA_CACHE_KEY = 'kome_data_cache';
+const CACHE_TTL = 5 * 60 * 1000; // 5 phút
+
+let sheetUrl = localStorage.getItem(SHEET_URL_KEY) || '';
+let customerData = {};
+let productData = [];
+let chokuData = [];
+let selectedCustomer = null;
+let selectedChoku = null;
+let cart = [];
+let freeShip = { dry: null, cool: null, cold: null };
+let customDaibiki = null;
+let orderDiscount = 0;
+
+const tax10Skus = ['BS01','BS02','BS04','BS06','HAB05','HAB06','HAL02','HAL03','HAL08','HAL11','LD01','LD02','RV01','RV02','RV03','RV05','RV06','RV07','RV09'];
+
+// =============================================
+// SETTINGS
+// =============================================
+function openSettings() {
+  document.getElementById('setting-url').value = sheetUrl;
+  document.getElementById('settings-modal').classList.remove('hidden');
+}
+function closeSettings() {
+  document.getElementById('settings-modal').classList.add('hidden');
+}
+function saveSettings() {
+  const url = document.getElementById('setting-url').value.trim();
+  if (!url) return alert('Vui lòng nhập URL');
+  sheetUrl = url;
+  localStorage.setItem(SHEET_URL_KEY, url);
+  closeSettings();
+  loadData(true);
+}
+
+// =============================================
+// DATA LOADING
+// =============================================
+async function loadData(force = false) {
+  if (!sheetUrl) { openSettings(); return; }
+
+  setStatus('loading');
+  showLoading(true);
+
+  // Check cache
+  if (!force) {
+    const cached = localStorage.getItem(DATA_CACHE_KEY);
+    if (cached) {
+      try {
+        const { ts, data } = JSON.parse(cached);
+        if (Date.now() - ts < CACHE_TTL) {
+          applyData(data);
+          showLoading(false);
+          setStatus('ok');
+          return;
+        }
+      } catch(e) {}
+    }
+  }
+
+  try {
+    const res = await fetch(sheetUrl);
+    const json = await res.json();
+    if (json.status === 'success') {
+      localStorage.setItem(DATA_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: json.data }));
+      applyData(json.data);
+      setStatus('ok');
+    } else {
+      setStatus('err', json.message);
+    }
+  } catch(e) {
+    setStatus('err', e.message);
+  }
+  showLoading(false);
+}
+
+function applyData(data) {
+  customerData = data.customers || {};
+  productData = data.products || [];
+  chokuData = (data.chokusetsusaki || []).map(r => ({
+    customerCode: String(r.customerCode || r.code || '').trim(),
+    code: String(r.code || '').trim(),
+    name: String(r.name || '').trim(),
+    post: String(r.post || '').trim(),
+    pref: String(r.pref || '').trim(),
+    city: String(r.city || '').trim(),
+    add1: String(r.add1 || '').trim(),
+    add2: String(r.add2 || '').trim(),
+  }));
+  renderCustomerList('');
+}
+
+function reloadData() { loadData(true); }
+
+function setStatus(type, msg) {
+  const el = document.getElementById('header-status');
+  if (type === 'ok') { el.textContent = '● データ読み込み完了'; el.className = 'ok'; }
+  else if (type === 'loading') { el.textContent = '● 読み込み中...'; el.className = ''; }
+  else { el.textContent = '● エラー: ' + (msg||''); el.className = 'err'; }
+}
+
+function showLoading(v) {
+  document.getElementById('loading').className = v ? '' : 'hidden';
+}
+
+// =============================================
+// CUSTOMER LIST
+// =============================================
+function renderCustomerList(q) {
+  const list = document.getElementById('customer-list');
+  const entries = Object.entries(customerData);
+  const filtered = q
+    ? entries.filter(([url, c]) => {
+        const s = `${c.name||''} ${c.id||''} ${c.pic||''} ${c.tags||''}`.toLowerCase();
+        return s.includes(q.toLowerCase());
+      })
+    : entries;
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div>Không tìm thấy</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.slice(0, 100).map(([url, c]) => `
+    <div class="customer-item ${selectedCustomer?.urlKey === url ? 'active' : ''}" onclick="selectCustomer('${url}')">
+      <div class="customer-item-name">${c.name || '(Đang tải...)'}</div>
+      <div class="customer-item-sub">Mã: ${c.id || ''} · ${c.pic || ''}</div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('customer-search').addEventListener('input', e => {
+  renderCustomerList(e.target.value);
+});
+
+function selectCustomer(urlKey) {
+  const c = customerData[urlKey];
+  if (!c) return;
+  selectedCustomer = { ...c, urlKey };
+  cart = [];
+  selectedChoku = null;
+  freeShip = { dry: null, cool: null, cold: null };
+  customDaibiki = null;
+  orderDiscount = 0;
+  document.getElementById('order-discount').value = 0;
+
+  renderCustomerList(document.getElementById('customer-search').value);
+  renderCustomerInfo();
+  renderChokuSuggestions('');
+  renderCart();
+}
+
+function renderCustomerInfo() {
+  const c = selectedCustomer;
+  if (!c) return;
+  document.getElementById('customer-info-body').innerHTML = `
+    <div class="info-grid">
+      <div class="info-item"><label>得意先コード</label><value>${c.id}</value></div>
+      <div class="info-item"><label>請求方法</label><value>${c.seikyu||'―'}</value></div>
+      <div class="info-item" style="grid-column:span 2"><label>会社名</label><value>${c.name}</value></div>
+      <div class="info-item" style="grid-column:span 2"><label>住所</label><value style="font-size:12px;font-weight:400;">${c.address||'―'}</value></div>
+      <div class="info-item"><label>担当者</label><value>${c.pic||'―'}</value></div>
+      <div class="info-item"><label>ランク</label><value>${c.rank||'―'}</value></div>
+    </div>
+  `;
+}
+
+// =============================================
+// 直送先
+// =============================================
+function renderChokuSuggestions(q) {
+  const box = document.getElementById('choku-results');
+  if (!selectedCustomer) { box.innerHTML = ''; return; }
+
+  const custCode = String(selectedCustomer.id).trim();
+  let items = chokuData.filter(x => String(x.customerCode).trim() === custCode);
+
+  if (q) items = items.filter(x =>
+    `${x.name} ${x.code} ${x.pref}${x.city}${x.add1}`.toLowerCase().includes(q.toLowerCase())
+  );
+
+  if (items.length === 0) {
+    box.innerHTML = q ? '<div style="font-size:12px;color:var(--gray-3);padding:6px;">Không tìm thấy</div>' : '';
+    return;
+  }
+
+  box.innerHTML = items.map(x => `
+    <div class="choku-item" onclick="selectChoku('${x.code}')">
+      <div class="choku-item-name">📍 ${x.name} <span style="color:var(--gray-3);font-weight:400;">(${x.code})</span></div>
+      <div class="choku-item-addr">〒${x.post} ${x.pref}${x.city}${x.add1} ${x.add2}</div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('choku-search').addEventListener('input', e => renderChokuSuggestions(e.target.value));
+document.getElementById('choku-search').addEventListener('focus', () => renderChokuSuggestions(''));
+
+function selectChoku(code) {
+  selectedChoku = chokuData.find(x => x.code === code) || null;
+  document.getElementById('choku-results').innerHTML = '';
+  if (!selectedChoku) return;
+  const s = selectedChoku;
+  const sel = document.getElementById('choku-selected');
+  sel.className = 'show';
+  sel.innerHTML = `
+    <span class="choku-clear" onclick="clearChoku()">✕ Xóa</span>
+    <strong>${s.name}</strong> (${s.code})<br>
+    <span style="font-size:11px;">〒${s.post} ${s.pref}${s.city}${s.add1} ${s.add2}</span>
+  `;
+  document.getElementById('choku-search').value = s.name;
+}
+
+function clearChoku() {
+  selectedChoku = null;
+  document.getElementById('choku-selected').className = '';
+  document.getElementById('choku-search').value = '';
+}
+
+// =============================================
+// PRODUCT SEARCH
+// =============================================
+document.getElementById('product-search').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase().trim();
+  const box = document.getElementById('product-results');
+  if (q.length < 2) { box.innerHTML = ''; return; }
+
+  const results = productData.filter(p =>
+    (p.sku||'').toLowerCase().includes(q) ||
+    (p.name||'').toLowerCase().includes(q) ||
+    (p.nameJP||'').toLowerCase().includes(q)
+  ).slice(0, 8);
+
+  box.innerHTML = results.map(p => {
+    const pr = parseFloat((p.price||'').replace(/,/g,'')) || 0;
+    const ps = parseFloat((p.priceSale||'').replace(/,/g,'')) || 0;
+    const fp = (ps > 0 && ps < pr) ? ps : pr;
+    return `
+      <div class="product-item" onclick="addToCart('${p.sku}')">
+        <img src="${p.image||''}" onerror="this.style.display='none'" alt="">
+        <div class="product-item-info">
+          <div class="product-item-name">${p.name}</div>
+          <div class="product-item-sku">SKU: ${p.sku} · ${p.nameJP||''}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="product-item-price">¥${fp.toLocaleString('ja-JP')}</div>
+          ${ps > 0 && ps < pr ? `<div class="price-orig">¥${pr.toLocaleString('ja-JP')}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('') || '<div style="padding:8px;color:var(--gray-3);font-size:12px;">Không tìm thấy sản phẩm</div>';
+});
+
+document.getElementById('product-search').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const first = document.querySelector('#product-results .product-item');
+    if (first) first.click();
+  }
+});
+
+// =============================================
+// CART
+// =============================================
+function getShippingType(category) {
+  if (!category) return 'dry';
+  const c = category.toLowerCase();
+  if (c.includes('1.đông lạnh') || c.includes('冷凍')) return 'cold';
+  if (c.includes('2.sứa') || c.includes('冷蔵')) return 'cool';
+  return 'dry';
+}
+
+function addToCart(sku) {
+  const p = productData.find(x => x.sku === sku);
+  if (!p) return;
+  const pr = parseFloat((p.price||'').replace(/,/g,'')) || 0;
+  const ps = parseFloat((p.priceSale||'').replace(/,/g,'')) || 0;
+  const fp = (ps > 0 && ps < pr) ? ps : pr;
+  const isXot = (p.category||'').toLowerCase().includes('xốt');
+  const qty = isXot ? 0.25 : 1;
+  const existing = cart.find(x => x.sku === sku);
+  if (existing) existing.qty = Math.round((existing.qty + qty) * 100) / 100;
+  else cart.push({ sku: p.sku, name: p.name, nameJP: p.nameJP||'', price: fp, originalPrice: pr, qty, isXot, shippingType: getShippingType(p.category||''), discount: 0 });
+  document.getElementById('product-search').value = '';
+  document.getElementById('product-results').innerHTML = '';
+  renderCart();
+}
+
+function clearCart() {
+  if (!cart.length) return;
+  if (!confirm('Xóa toàn bộ giỏ hàng?')) return;
+  cart = []; freeShip = { dry: null, cool: null, cold: null }; customDaibiki = null;
+  renderCart();
+}
+
+function renderCart() {
+  const body = document.getElementById('cart-body');
+  const summaryCard = document.getElementById('summary-card');
+
+  if (cart.length === 0) {
+    body.innerHTML = '<div class="empty-state" style="padding:16px;font-size:12px;">Giỏ hàng đang trống...</div>';
+    summaryCard.style.display = 'none';
+    return;
+  }
+
+  const groups = [
+    { key: 'dry',  label: '常温品 (Hàng Khô)', cls: 'cart-group-dry' },
+    { key: 'cool', label: '冷蔵品 (Hàng Mát)', cls: 'cart-group-cool' },
+    { key: 'cold', label: '冷凍品 (Hàng Lạnh)', cls: 'cart-group-cold' },
+  ];
+
+  let html = '';
+  let subTotalAll = 0;
+  let summaryHtml = '';
+
+  groups.forEach(g => {
+    const items = cart.filter(x => x.shippingType === g.key);
+    if (!items.length) return;
+
+    html += `<div class="cart-group-title ${g.cls}">${g.label}</div>`;
+    let sub = 0; let crates = 0;
+
+    items.forEach(item => {
+      const ep = item.price - (item.discount||0);
+      const total = item.isXot ? ep*(item.qty/0.25) : ep*item.qty;
+      sub += total; crates += item.qty;
+
+      html += `
+        <div class="cart-item">
+          <div style="flex:1;min-width:0;">
+            <div class="cart-item-name">${item.name}</div>
+            <div class="cart-item-sku">SKU: ${item.sku}</div>
+            <div style="display:flex;align-items:center;gap:4px;margin-top:3px;">
+              <input type="number" class="cart-discount-input" data-sku="${item.sku}"
+                value="${item.discount||''}" placeholder="¥off" min="0"
+                oninput="updateItemDiscount('${item.sku}', this.value)">
+              <span style="font-size:10px;color:var(--gray-3);">¥ off</span>
+            </div>
+          </div>
+          <div class="cart-qty-ctrl">
+            <button onclick="changeQty('${item.sku}',-1)">−</button>
+            <span>${item.qty}</span>
+            <button onclick="changeQty('${item.sku}',1)">+</button>
+          </div>
+          <div style="text-align:right;min-width:60px;">
+            <div class="cart-item-price">¥${Math.round(total).toLocaleString('ja-JP')}</div>
+          </div>
+          <span class="cart-del" onclick="removeFromCart('${item.sku}')">×</span>
+        </div>
+      `;
+    });
+
+    const defShip = sub < 20000 ? crates * 500 : 0;
+    const ship = freeShip[g.key] !== null ? freeShip[g.key] : defShip;
+    const groupTotal = sub + ship;
+    subTotalAll += groupTotal;
+
+    summaryHtml += `
+      <div style="margin-bottom:12px;">
+        <div class="cart-group-title ${g.cls}" style="margin-bottom:6px;">${g.label}</div>
+        <div class="summary-row"><span class="summary-label">Tiền hàng</span><span class="summary-value">¥${Math.round(sub).toLocaleString('ja-JP')}</span></div>
+        <div class="summary-row">
+          <span class="summary-label">Phí ship</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input type="number" class="ship-input" data-type="${g.key}" value="${ship}" min="0" step="100"
+              oninput="updateShip('${g.key}', this.value)">
+            <span class="summary-value ${ship>0?'red':''}">¥${ship.toLocaleString('ja-JP')}</span>
+          </div>
+        </div>
+        <div class="summary-row group-total"><span>小計</span><span>¥${groupTotal.toLocaleString('ja-JP')}</span></div>
+      </div>
+    `;
+  });
+
+  body.innerHTML = html;
+  summaryCard.style.display = 'block';
+
+  // COD
+  let codFee = 0;
+  const isCOD = selectedCustomer?.seikyu === '代引請求';
+  if (isCOD) {
+    const defCod = subTotalAll >= 20000 ? 300 : 330;
+    codFee = customDaibiki !== null ? customDaibiki : defCod;
+    summaryHtml += `
+      <div class="summary-row" style="background:var(--red-light);padding:6px 8px;border-radius:6px;margin-bottom:4px;">
+        <span class="summary-label">代引き手数料</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input type="number" class="cod-input" value="${codFee}" min="0" step="10"
+            oninput="updateCod(this.value)">
+          <span class="summary-value red">¥${codFee.toLocaleString('ja-JP')}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // Discount
+  orderDiscount = parseInt(document.getElementById('order-discount').value) || 0;
+  const finalTotal = Math.max(0, subTotalAll + codFee - orderDiscount);
+
+  // Tax
+  const calcGroupTax = (items, rate) => {
+    const g = items.reduce((s,i) => s + (i.isXot ? (i.price-(i.discount||0))*(i.qty/0.25) : (i.price-(i.discount||0))*i.qty), 0);
+    return Math.floor(g * rate / (100 + rate));
+  };
+  const dry8 = cart.filter(i => !tax10Skus.includes(i.sku) && i.shippingType==='dry');
+  const cool8 = cart.filter(i => !tax10Skus.includes(i.sku) && i.shippingType==='cool');
+  const cold8 = cart.filter(i => !tax10Skus.includes(i.sku) && i.shippingType==='cold');
+  const dry10 = cart.filter(i => tax10Skus.includes(i.sku) && i.shippingType==='dry');
+  const cool10 = cart.filter(i => tax10Skus.includes(i.sku) && i.shippingType==='cool');
+  const cold10 = cart.filter(i => tax10Skus.includes(i.sku) && i.shippingType==='cold');
+  const tax8 = calcGroupTax(dry8,8)+calcGroupTax(cool8,8)+calcGroupTax(cold8,8);
+  let tax10 = calcGroupTax(dry10,10)+calcGroupTax(cool10,10)+calcGroupTax(cold10,10);
+  const getShip = (items, type) => { if(freeShip[type]!==null) return freeShip[type]; const s=items.reduce((a,i)=>a+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0); return s<20000?items.reduce((a,i)=>a+i.qty,0)*500:0; };
+  const cartDry=cart.filter(x=>x.shippingType==='dry'), cartCool=cart.filter(x=>x.shippingType==='cool'), cartCold=cart.filter(x=>x.shippingType==='cold');
+  tax10 += Math.floor(getShip(cartDry,'dry')*10/110) + Math.floor(getShip(cartCool,'cool')*10/110) + Math.floor(getShip(cartCold,'cold')*10/110);
+  if (codFee > 0) tax10 += Math.floor(codFee*10/110);
+  const tax = tax8 + tax10;
+
+  if (orderDiscount > 0) summaryHtml += `<div class="summary-row discount"><span>割引 (Giảm giá)</span><span>-¥${orderDiscount.toLocaleString('ja-JP')}</span></div>`;
+  summaryHtml += `<div class="summary-row"><span class="summary-label">消費税</span><span class="summary-value">¥${tax.toLocaleString('ja-JP')}</span></div>`;
+  summaryHtml += `<div class="summary-row total"><span>TỔNG CỘNG (合計)</span><span>¥${finalTotal.toLocaleString('ja-JP')}</span></div>`;
+  summaryHtml += `<div style="font-size:11px;color:var(--gray-3);text-align:right;margin-top:4px;">(Đã bao gồm thuế: ¥${tax.toLocaleString('ja-JP')})</div>`;
+
+  document.getElementById('summary-body').innerHTML = summaryHtml;
+}
+
+function updateItemDiscount(sku, val) {
+  const item = cart.find(x => x.sku === sku);
+  if (item) { item.discount = parseFloat(val) || 0; renderCart(); }
+}
+function changeQty(sku, dir) {
+  const item = cart.find(x => x.sku === sku);
+  if (!item) return;
+  const step = item.isXot ? 0.25 : 1;
+  item.qty = Math.max(0, Math.round((item.qty + dir*step)*100)/100);
+  if (item.qty <= 0) cart = cart.filter(x => x.sku !== sku);
+  renderCart();
+}
+function removeFromCart(sku) { cart = cart.filter(x => x.sku !== sku); renderCart(); }
+function updateShip(type, val) { freeShip[type] = parseFloat(val) || 0; renderCart(); }
+function updateCod(val) { customDaibiki = parseFloat(val) || 0; renderCart(); }
+
+document.getElementById('order-discount').addEventListener('input', () => renderCart());
+
+// =============================================
+// PRINT
+// =============================================
+function handlePrint() {
+  if (!cart.length) { alert('Giỏ hàng đang trống!'); return; }
+  if (!selectedCustomer) { alert('Chưa chọn khách hàng!'); return; }
+
+  const deliveryTime  = document.getElementById('delivery-time').value;
+  const deliveryMonth = document.getElementById('delivery-month').value;
+  const deliveryDay   = document.getElementById('delivery-day').value;
+  const deliveryDate  = (deliveryMonth && deliveryDay) ? `${deliveryMonth}/${deliveryDay}` : '';
+  const noteRaw = document.getElementById('order-note-textarea').value;
+  const noteParts = [];
+  if (deliveryDate) noteParts.push(`【希望納品日: ${deliveryDate}】`);
+  if (deliveryTime) noteParts.push(`【時間帯: ${deliveryTime}】`);
+  if (noteRaw) noteParts.push(noteRaw);
+  const orderNote = noteParts.join(' ');
+
+  let deliveryCode = '', deliveryName = '', deliveryAddress = '';
+  if (selectedChoku) {
+    const s = selectedChoku;
+    deliveryCode = s.code;
+    deliveryName = s.name;
+    deliveryAddress = `〒${s.post} ${s.pref}${s.city}${s.add1} ${s.add2}`.trim();
+  } else {
+    const typed = document.getElementById('choku-search').value.trim();
+    if (typed) deliveryCode = typed;
+  }
+
+  const groups = [
+    { key: 'dry',  label: '常温品 (Hàng Khô)', cls: 'group-dry' },
+    { key: 'cool', label: '冷蔵品 (Hàng Mát)', cls: 'group-cool' },
+    { key: 'cold', label: '冷凍品 (Hàng Lạnh)', cls: 'group-cold' },
+  ];
+
+  let allHtml = ''; let grandTotal = 0; let allCrates = 0;
+  const calcShip = (items, type) => { if(freeShip[type]!==null) return freeShip[type]; const s=items.reduce((a,i)=>a+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0); return s<20000?items.reduce((a,i)=>a+i.qty,0)*500:0; };
+
+  groups.forEach(g => {
+    const items = cart.filter(x => x.shippingType === g.key);
+    if (!items.length) return;
+    let sub = 0; let crates = 0; let rowNum = 0; let rowsHtml = '';
+    items.forEach(item => {
+      rowNum++;
+      const ep = item.price - (item.discount||0);
+      const total = Math.round(item.isXot ? ep*(item.qty/0.25) : ep*item.qty);
+      sub += total; crates += item.qty;
+      let priceCell = `¥${ep.toLocaleString('ja-JP')}`;
+      if (ep < item.originalPrice) priceCell += `<br><small style="text-decoration:line-through;color:#999;">(¥${item.originalPrice.toLocaleString('ja-JP')})</small>`;
+      rowsHtml += `<tr><td style="text-align:center;color:#666;">${rowNum}</td><td>${item.sku}</td><td>${item.name}<br><small>${item.nameJP}</small></td><td class="qty-cell">${item.qty}</td><td>${priceCell}</td><td class="amount-cell">¥${total.toLocaleString('ja-JP')}</td></tr>`;
+    });
+    const ship = calcShip(items, g.key);
+    const groupTotal = sub + ship;
+    grandTotal += groupTotal; allCrates += crates;
+    const summaryRows = `
+      <tr style="border-top:2px solid #333;"><td colspan="3" style="border:none;background:#fff;"></td><td colspan="2" class="sum-label">商品合計 (ケース数: ${crates})</td><td class="sum-val">¥${sub.toLocaleString('ja-JP')}</td></tr>
+      <tr><td colspan="3" style="border:none;background:#fff;"></td><td colspan="2" class="sum-label">送料</td><td class="sum-val">¥${ship.toLocaleString('ja-JP')}</td></tr>
+      <tr><td colspan="3" style="border:none;background:#fff;"></td><td colspan="2" class="sum-label total">小計 (${g.label})</td><td class="sum-val total">¥${groupTotal.toLocaleString('ja-JP')}</td></tr>
+    `;
+    allHtml += `<div class="group-title ${g.cls}">${g.label}</div>
+<table class="details-table"><thead><tr><th style="width:5%">行</th><th style="width:10%">コード</th><th style="width:43%">商品名</th><th style="width:13%">数量(ケース)</th><th style="width:12%">単価(標準)</th><th style="width:17%">金額</th></tr></thead><tbody>${rowsHtml}${summaryRows}</tbody></table>`;
+  });
+
+  // Tax
+  const calcGroupTax = (items, rate) => { const g=items.reduce((s,i)=>s+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0); return Math.floor(g*rate/(100+rate)); };
+  const cartDry=cart.filter(x=>x.shippingType==='dry'), cartCool=cart.filter(x=>x.shippingType==='cool'), cartCold=cart.filter(x=>x.shippingType==='cold');
+  const tax8 = calcGroupTax(cart.filter(i=>!tax10Skus.includes(i.sku)&&i.shippingType==='dry'),8)+calcGroupTax(cart.filter(i=>!tax10Skus.includes(i.sku)&&i.shippingType==='cool'),8)+calcGroupTax(cart.filter(i=>!tax10Skus.includes(i.sku)&&i.shippingType==='cold'),8);
+  let tax10 = calcGroupTax(cart.filter(i=>tax10Skus.includes(i.sku)&&i.shippingType==='dry'),10)+calcGroupTax(cart.filter(i=>tax10Skus.includes(i.sku)&&i.shippingType==='cool'),10)+calcGroupTax(cart.filter(i=>tax10Skus.includes(i.sku)&&i.shippingType==='cold'),10);
+  tax10 += Math.floor(calcShip(cartDry,'dry')*10/110)+Math.floor(calcShip(cartCool,'cool')*10/110)+Math.floor(calcShip(cartCold,'cold')*10/110);
+
+  let codFee = 0, codHtml = '';
+  if (selectedCustomer?.seikyu === '代引請求') {
+    const defCod = grandTotal >= 20000 ? 300 : 330;
+    codFee = customDaibiki !== null ? customDaibiki : defCod;
+    tax10 += Math.floor(codFee*10/110);
+    codHtml = `<tr class="cod-row"><td class="total-label">代引き手数料</td><td></td><td class="total-value" style="color:#c0392b;">¥${codFee.toLocaleString('ja-JP')}</td></tr>`;
+  }
+  const tax = tax8 + tax10;
+  const finalTotal = Math.max(0, grandTotal + codFee - orderDiscount);
+  const discountHtml = orderDiscount > 0 ? `<tr><td class="total-label">割引 (Giảm giá)</td><td></td><td class="total-value" style="color:#c0392b;">-¥${orderDiscount.toLocaleString('ja-JP')}</td></tr>` : '';
+
+  const c = selectedCustomer;
+  const printHtml = `<html><head><title>注文書 - ${c.name}</title><meta charset="UTF-8"><style>
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;margin:0;font-size:8pt;color:#000;background:#f4f4f4}
+#inv{max-width:1000px;margin:0 auto;padding:15px;background:#fff}
+h1{font-size:14pt;text-align:center;margin:5px 0 20px}
+table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:4px 5px;vertical-align:middle;line-height:1.3}
+.header-table .label{background:#f9f9f9;text-align:center;font-weight:bold;width:15%}
+.header-table .value{width:35%}.header-table .sep{border:none;padding:3px 0;height:3px}
+.group-title{font-size:8pt;font-weight:bold;margin:20px 0 8px;border-bottom:2px solid #000;padding-bottom:4px}
+.group-dry{border-color:#e65100}.group-cool{border-color:#2e7d32}.group-cold{border-color:#1565c0}
+.details-table th{background:#444;color:#fff;padding:5px;text-align:center;white-space:nowrap;font-size:8pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.details-table tbody tr:nth-child(even){background:#f9f9f9}
+.details-table small{font-size:7pt;color:#555}.qty-cell{text-align:right}.amount-cell{text-align:right}
+.sum-label{text-align:right;background:#f9f9f9;font-size:8pt;font-weight:bold}
+.sum-val{text-align:right;font-size:10pt;font-weight:bold}
+.sum-label.total{background:#eee;font-size:9pt}.sum-val.total{background:#eee;font-size:12pt;font-weight:900}
+.footer-table{margin-top:20px;width:100%}.footer-table td{border:1px solid #ddd;padding:6px 10px;font-size:9pt;font-weight:bold}
+.total-label{text-align:right;background:#f9f9f9;width:55%}.total-value{text-align:right;width:25%;font-size:11pt;font-weight:900}
+.cod-row td{background:#fff3f3;border-color:#f3c3c3}
+.notes-section{border:1px solid #ccc;border-radius:4px;overflow:hidden;margin-bottom:14px}
+.notes-section .lbl{font-weight:bold;font-size:9pt;padding:4px 8px;background:#f9f9f9;border-bottom:1px solid #ddd}
+.notes-section .cnt{padding:5px 8px;white-space:pre-wrap;font-size:9pt}
+.no-print{display:none}@media screen{.no-print{display:inline-block}}
+@media print{body{background:#fff}#inv{box-shadow:none}}
+</style></head><body>
+<button class="no-print" onclick="window.print()" style="padding:10px 20px;font-size:16px;margin:10px;cursor:pointer;">🖨 In Hóa Đơn</button>
+<div id="inv">
+<h1>注 文 請 書 (小売店専用 / ケース販売)</h1>
+<table class="header-table">
+<tr><td class="label">得意先コード</td><td class="value">${c.id}</td><td class="label">日付</td><td class="value">${new Date().toLocaleDateString('ja-JP')}</td></tr>
+<tr><td class="label">会社名</td><td class="value" colspan="3">${c.name}</td></tr>
+<tr><td class="label">住所</td><td class="value" colspan="3">${c.address||''}</td></tr>
+<tr><td colspan="4" class="sep"></td></tr>
+<tr><td class="label">納品先コード</td><td class="value">${deliveryCode}</td><td class="label">納品先名</td><td class="value">${deliveryName}</td></tr>
+<tr><td class="label">住所</td><td class="value" colspan="3">${deliveryAddress}</td></tr>
+<tr><td colspan="4" class="sep"></td></tr>
+<tr><td class="label">営業担当</td><td class="value">${c.pic||''}</td><td class="label">役職</td><td class="value"></td></tr>
+</table>
+<div style="text-align:center;font-weight:bold;margin:20px 0 10px;font-size:11pt;">明 細</div>
+<div class="notes-section"><div class="lbl">補足事項</div><div class="cnt">${orderNote.replace(/\n/g,'<br>')}</div></div>
+${allHtml}
+<table class="footer-table">${codHtml}${discountHtml}
+<tr><td class="total-label">消費税額</td><td style="width:20%;text-align:center;background:#f9f9f9;"></td><td class="total-value">¥${tax.toLocaleString('ja-JP')}</td></tr>
+<tr><td class="total-label">合 計</td><td style="text-align:center;background:#f9f9f9;">${allCrates} ケース</td><td class="total-value"><strong>¥${finalTotal.toLocaleString('ja-JP')}</strong></td></tr>
+</table>
+</div></body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(printHtml);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 500);
+
+  // Save to sheet
+  saveOrder({ customerId: c.id, customerName: c.name, address: c.address||'', chokuId: deliveryCode, chokuName: deliveryName, staff: c.pic||'',
+    items: cart.map(item => { const ep=item.price-(item.discount||0); const total=Math.round(item.isXot?ep*(item.qty/0.25):ep*item.qty); return {sku:item.sku,name:item.name,nameJP:item.nameJP||'',qty:item.qty,price:item.price,discount:item.discount||0,total}; }),
+    shippingFee: ['dry','cool','cold'].reduce((a,t)=>a+calcShip(cart.filter(x=>x.shippingType===t),t),0),
+    codFee, discount: orderDiscount, tax, grandTotal: finalTotal, deliveryTime, deliveryDate, note: noteRaw
+  });
+}
+
+async function saveOrder(data) {
+  if (!sheetUrl) return;
+  try {
+    const res = await fetch(sheetUrl, { method: 'POST', body: JSON.stringify({ action: 'saveOrder', data }) });
+    const json = await res.json();
+    if (json.status === 'ok') console.info('✅ Đã lưu đơn:', json.message);
+    else console.warn('⚠️ Lưu đơn thất bại:', json.message);
+  } catch(e) { console.warn('saveOrder error:', e); }
+}
+
+// =============================================
+// INIT
+// =============================================
+window.addEventListener('DOMContentLoaded', () => {
+  if (sheetUrl) loadData();
+  else openSettings();
+});
+</script>
+</body>
+</html>
