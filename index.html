@@ -83,10 +83,10 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .tb-btn:hover { background: rgba(255,255,255,.3); }
 
 /* ===== 3-COLUMN LAYOUT ===== */
-#main { display: grid; grid-template-columns: 1fr 400px 330px; height: calc(100vh - 56px); }
+#main { display: grid; grid-template-columns: 1fr 420px; height: calc(100vh - 56px); }
 
 /* Col 1: Products */
-#col-products { display: flex; flex-direction: column; background: var(--white); border-right: 1px solid var(--gray4); min-width: 0; }
+#col-products { display: flex; flex-direction: column; background: var(--white); border-right: 1px solid var(--gray4); min-width: 0; min-height: 0; }
 #product-search-bar { padding: 10px 12px; border-bottom: 2px solid var(--yellow); display: flex; gap: 8px; background: var(--yellow-light); }
 #product-search-input { flex: 1; padding: 8px 12px; border: 1px solid var(--gray4); border-radius: 8px; font-size: 13px; outline: none; }
 #product-search-input:focus { border-color: var(--red); }
@@ -111,7 +111,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 #page-info { font-size: 13px; color: var(--gray2); font-weight: 600; }
 
 /* Col 2: Order */
-#col-order { display: flex; flex-direction: column; background: #fffdf8; border-right: 1px solid var(--gray4); min-width: 0; }
+#col-order { display: flex; flex-direction: column; background: #fffdf8; min-width: 0; min-height: 0; }
 #order-header { padding: 10px 12px; border-bottom: 2px solid var(--yellow); background: var(--yellow-light); flex-shrink: 0; }
 .of { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .of:last-child { margin-bottom: 0; }
@@ -127,7 +127,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .choku-item:hover { background: var(--yellow-light); }
 .ci-name { font-size: 12px; font-weight: 700; }
 .ci-addr { font-size: 10px; color: var(--gray3); }
-#cart-items { flex: 1; overflow-y: auto; padding: 8px 10px; }
+#cart-items { flex: 1 1 0; min-height: 0; overflow-y: auto; padding: 8px 10px; }
 .cart-group-lbl { font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 4px; margin: 6px 0 4px; display: inline-block; }
 .lbl-dry { background: #fff3e0; color: var(--orange); }
 .lbl-cool { background: #e8f5e9; color: var(--green); }
@@ -144,7 +144,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .cart-total { font-size: 12px; font-weight: 800; white-space: nowrap; min-width: 52px; text-align: right; }
 .cart-del { color: var(--gray3); cursor: pointer; padding: 2px 4px; font-size: 16px; }
 .cart-del:hover { color: var(--red); }
-#summary { border-top: 2px solid var(--yellow); padding: 8px 12px; flex-shrink: 0; background: var(--yellow-light); max-height: 300px; overflow-y: auto; }
+#summary { border-top: 2px solid var(--yellow); padding: 8px 12px; flex-shrink: 0; background: var(--yellow-light); max-height: 260px; overflow-y: auto; }
 .sum-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 2px 0; }
 .sum-row.group { font-weight: 700; border-top: 1px dashed var(--gray4); margin-top: 3px; padding-top: 4px; }
 .sum-row.total { font-size: 16px; font-weight: 900; border-top: 2px solid var(--red); margin-top: 5px; padding-top: 6px; color: var(--red-dark); }
@@ -159,8 +159,12 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 #btn-print { flex: 1; background: linear-gradient(135deg, var(--red), var(--red-dark)); color: #fff; border: none; border-radius: 8px; padding: 10px 14px; font-size: 13px; font-weight: 800; cursor: pointer; letter-spacing: .5px; }
 #btn-print:hover { filter: brightness(1.1); }
 
-/* Col 3: Customer / Messenger */
-#col-chat { display: flex; flex-direction: column; background: var(--white); min-width: 0; }
+/* Col 3 -> Drawer trượt từ phải */
+#col-chat { position: fixed; top: 56px; right: 0; bottom: 0; width: 360px; display: flex; flex-direction: column; background: var(--white); box-shadow: -6px 0 24px rgba(0,0,0,.18); transform: translateX(105%); transition: transform .3s cubic-bezier(.2,.9,.3,1); z-index: 500; }
+#col-chat.open { transform: translateX(0); }
+#chat-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--red-dark); margin-left: auto; line-height: 1; }
+#btn-cust-info { background: var(--white); color: var(--red-dark); border: 2px solid var(--yellow); border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 12px; font-weight: 700; white-space: nowrap; }
+#btn-cust-info:hover { background: var(--yellow-light); }
 #chat-header { padding: 10px 12px; background: var(--yellow); border-bottom: 1px solid var(--yellow-dark); font-size: 13px; font-weight: 800; color: var(--red-dark); flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
 #chat-body { flex: 1; overflow-y: auto; padding: 12px; }
 .info-card { background: #fffdf5; border: 1px solid var(--yellow); border-radius: var(--radius); padding: 12px; margin-bottom: 12px; }
@@ -196,7 +200,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-thumb { background: #d9cba8; border-radius: 3px; }
 
-@media (max-width: 1280px) { #main { grid-template-columns: 1fr 380px 280px; } }
+@media (max-width: 1280px) { #main { grid-template-columns: 1fr 390px; } }
 </style>
 </head>
 <body>
@@ -266,7 +270,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
   <!-- COL 2: ORDER -->
   <div id="col-order">
     <div id="order-header">
-      <div class="of"><label>Khách</label><span class="of-val" id="hdr-customer">― Chưa chọn</span></div>
+      <div class="of"><label>Khách</label><span class="of-val" id="hdr-customer">― Chưa chọn</span><button id="btn-cust-info" onclick="toggleCustInfo()">👤 Thông tin & liên hệ</button></div>
       <div class="of"><label>Mã KH</label><span class="of-val" id="hdr-id" style="color:var(--red)"></span></div>
       <div class="of"><label>直送先</label>
         <div id="choku-wrap"><input id="choku-input" placeholder="Tìm địa chỉ giao hàng..."><div id="choku-dd"></div></div>
@@ -292,7 +296,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 
   <!-- COL 3: CUSTOMER INFO + MESSENGER -->
   <div id="col-chat">
-    <div id="chat-header">💬 Khách hàng & Messenger</div>
+    <div id="chat-header">💬 Khách hàng & Messenger <button id="chat-close" onclick="toggleCustInfo(false)">✕</button></div>
     <div id="chat-body">
       <div class="chat-note">← Chọn khách hàng để xem thông tin và mở chat Messenger</div>
     </div>
@@ -310,6 +314,7 @@ const STAFF_LIST=[
   {name:'Hà Phi Long',        short:'L', avatar:'./images/long.png'},
 ];
 
+function roundTax(x){ return (x-Math.floor(x))>0.5 ? Math.ceil(x) : Math.floor(x); }
 let sheetUrl=localStorage.getItem(SHEET_URL_KEY)||'';
 let currentStaff=localStorage.getItem(STAFF_KEY)||'';
 let customerData={}, productData=[], chokuData=[];
@@ -470,7 +475,14 @@ function renderOrderHeader(){
   document.getElementById('hdr-id').textContent=c?c.id:'';
 }
 
-// ============ CHAT PANEL (COL 3) ============
+// ============ CHAT PANEL (DRAWER) ============
+function toggleCustInfo(force){
+  const el=document.getElementById('col-chat');
+  const open = force!==undefined ? force : !el.classList.contains('open');
+  el.classList.toggle('open', open);
+  if(open) renderChatPanel();
+}
+
 function renderChatPanel(){
   const t=getTab(), c=t?.customer;
   const body=document.getElementById('chat-body');
@@ -629,12 +641,12 @@ function renderCart(){
   }
   t.discount=parseInt(document.getElementById('disc-input').value)||0;
   const fin=Math.max(0,subAll+cod-t.discount);
-  const gTax=(items,r)=>{const g=items.reduce((s,i)=>s+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0);return Math.floor(g*r/(100+r));};
+  const gTax=(items,r)=>{const g=items.reduce((s,i)=>s+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0);return roundTax(g*r/(100+r));};
   const cShip=(items,tp)=>{if(t.freeShip[tp]!==null)return t.freeShip[tp];const s=items.reduce((a,i)=>a+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0);return s<20000?items.reduce((a,i)=>a+i.qty,0)*500:0;};
   const tax8=['dry','cool','cold'].reduce((s,tp)=>s+gTax(t.cart.filter(i=>!TAX10.includes(i.sku)&&i.shippingType===tp),8),0);
   let tax10=['dry','cool','cold'].reduce((s,tp)=>s+gTax(t.cart.filter(i=>TAX10.includes(i.sku)&&i.shippingType===tp),10),0);
-  tax10+=['dry','cool','cold'].reduce((s,tp)=>s+Math.floor(cShip(t.cart.filter(x=>x.shippingType===tp),tp)*10/110),0);
-  if(cod>0) tax10+=Math.floor(cod*10/110);
+  tax10+=['dry','cool','cold'].reduce((s,tp)=>s+roundTax(cShip(t.cart.filter(x=>x.shippingType===tp),tp)*10/110),0);
+  if(cod>0) tax10+=roundTax(cod*10/110);
   const tax=tax8+tax10;
   if(t.discount>0) sumHtml+=`<div class="sum-row disc"><span>割引 (Giảm giá)</span><span>-¥${t.discount.toLocaleString('ja-JP')}</span></div>`;
   sumHtml+=`<div class="sum-row"><span class="sum-label">消費税</span><span>¥${tax.toLocaleString('ja-JP')}</span></div>`;
@@ -697,15 +709,15 @@ function handlePrint(){
 <tr><td colspan="3" style="border:none;"></td><td colspan="2" class="sl">送料</td><td class="sv">¥${ship.toLocaleString('ja-JP')}</td></tr>
 <tr><td colspan="3" style="border:none;"></td><td colspan="2" class="sl total">小計 (${g.label})</td><td class="sv total">¥${gt.toLocaleString('ja-JP')}</td></tr></tbody></table>`;
   });
-  const gTax=(items,r)=>{const g=items.reduce((s,i)=>s+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0);return Math.floor(g*r/(100+r));};
+  const gTax=(items,r)=>{const g=items.reduce((s,i)=>s+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0);return roundTax(g*r/(100+r));};
   const tax8=['dry','cool','cold'].reduce((s,tp)=>s+gTax(t.cart.filter(i=>!TAX10.includes(i.sku)&&i.shippingType===tp),8),0);
   let tax10=['dry','cool','cold'].reduce((s,tp)=>s+gTax(t.cart.filter(i=>TAX10.includes(i.sku)&&i.shippingType===tp),10),0);
-  tax10+=['dry','cool','cold'].reduce((s,tp)=>s+Math.floor(cShip(t.cart.filter(x=>x.shippingType===tp),tp)*10/110),0);
+  tax10+=['dry','cool','cold'].reduce((s,tp)=>s+roundTax(cShip(t.cart.filter(x=>x.shippingType===tp),tp)*10/110),0);
   let cod=0,codHtml='';
   if(t.customer?.seikyu==='代引請求'){
     const def=grand>=20000?300:330;
     cod=t.customDaibiki!==null?t.customDaibiki:def;
-    tax10+=Math.floor(cod*10/110);
+    tax10+=roundTax(cod*10/110);
     codHtml=`<tr class="cod"><td class="tl">代引き手数料</td><td></td><td class="tv" style="color:#D42D27;">¥${cod.toLocaleString('ja-JP')}</td></tr>`;
   }
   const tax=tax8+tax10, disc=t.discount||0;
