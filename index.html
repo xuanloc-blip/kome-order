@@ -451,6 +451,9 @@ csInput.addEventListener('input',e=>{
   csDd.classList.add('show');
 });
 document.addEventListener('click',e=>{ if(!e.target.closest('#customer-search-wrap')) csDd.classList.remove('show'); });
+csInput.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); const f=csDd.querySelector('.cust-dd-item'); if(f) f.click(); }
+});
 
 function selectCustomer(urlKey){
   const c=customerData[urlKey]; if(!c) return;
@@ -634,12 +637,16 @@ function renderCart(){
   sumHtml+=`<div class="sum-row total"><span>合計 (TỔNG)</span><span>¥${fin.toLocaleString('ja-JP')}</span></div>`;
   sumEl.innerHTML=sumHtml;
 }
-function updDisc(sku,v){const t=getTab();const i=t?.cart.find(x=>x.sku===sku);if(i)i.discount=parseFloat(v)||0;renderCart();}
+let _discT={};
+function updDisc(sku,v){clearTimeout(_discT[sku]);_discT[sku]=setTimeout(()=>{const t=getTab();const i=t?.cart.find(x=>x.sku===sku);if(i)i.discount=parseFloat(v)||0;renderCart();},600);}
 function chgQty(sku,d){const t=getTab();if(!t)return;const i=t.cart.find(x=>x.sku===sku);if(!i)return;const s=i.isXot?.25:1;i.qty=Math.round((i.qty+d*s)*100)/100;if(i.qty<=0)t.cart=t.cart.filter(x=>x.sku!==sku);renderCart();renderTabs();}
 function delItem(sku){const t=getTab();if(!t)return;t.cart=t.cart.filter(x=>x.sku!==sku);renderCart();renderTabs();}
-function updShip(tp,v){const t=getTab();if(!t)return;t.freeShip[tp]=parseFloat(v)||0;renderCart();}
-function updCod(v){const t=getTab();if(!t)return;t.customDaibiki=parseFloat(v)||0;renderCart();}
-document.getElementById('disc-input').addEventListener('input',()=>renderCart());
+let _shipT={};
+function updShip(tp,v){clearTimeout(_shipT[tp]);_shipT[tp]=setTimeout(()=>{const t=getTab();if(!t)return;t.freeShip[tp]=parseFloat(v)||0;renderCart();},600);}
+let _codT;
+function updCod(v){clearTimeout(_codT);_codT=setTimeout(()=>{const t=getTab();if(!t)return;t.customDaibiki=parseFloat(v)||0;renderCart();},600);}
+let _odT;
+document.getElementById('disc-input').addEventListener('input',()=>{clearTimeout(_odT);_odT=setTimeout(()=>renderCart(),600);});
 ['delivery-time','delivery-month','delivery-day','order-note'].forEach(id=>{
   document.getElementById(id).addEventListener('change',()=>{
     const t=getTab();if(!t)return;
@@ -717,7 +724,7 @@ table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:4p
 .sl{text-align:right;background:#f9f9f9;font-size:8pt;font-weight:bold}.sv{text-align:right;font-size:10pt;font-weight:bold}
 .sl.total{background:#eee;font-size:9pt}.sv.total{background:#eee;font-size:12pt;font-weight:900}
 .ft{margin-top:20px;width:100%}.ft td{border:1px solid #ddd;padding:6px 10px;font-size:9pt;font-weight:bold}
-.tl{text-align:right;background:#f9f9f9;width:55%}.tv{text-align:right;width:25%;font-size:11pt;font-weight:900}
+.tl{text-align:right;background:#f9f9f9;width:55%}.tq{text-align:center;width:20%;background:#f9f9f9;white-space:nowrap;font-size:9pt}.tv{text-align:right;width:25%;font-size:11pt;font-weight:900}
 .cod td{background:#fff3f3;border-color:#f3c3c3}
 .ns{border:1px solid #ccc;border-radius:4px;overflow:hidden;margin-bottom:14px}
 .ns .lb{font-weight:bold;font-size:9pt;padding:4px 8px;background:#f9f9f9;border-bottom:1px solid #ddd}
@@ -731,24 +738,23 @@ table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:4p
 <tr><td class="lb">会社名</td><td class="vl" colspan="3">${c.name}</td></tr>
 <tr><td class="lb">住所</td><td class="vl" colspan="3">${c.address||''}</td></tr>
 <tr><td colspan="4" class="sep"></td></tr>
-<tr><td class="lb">納品先コード</td><td class="vl">${dc}</td><td class="lb">納品先名</td><td class="vl">${dn}</td></tr>
+${(dc||dn)?`<tr><td class="lb">納品先コード</td><td class="vl">${dc}</td><td class="lb">納品先名</td><td class="vl">${dn}</td></tr>
 <tr><td class="lb">住所</td><td class="vl" colspan="3">${da}</td></tr>
-<tr><td colspan="4" class="sep"></td></tr>
-<tr><td class="lb">営業担当</td><td class="vl">${currentStaff||c.pic||''}</td><td class="lb">役職</td><td class="vl"></td></tr>
+<tr><td colspan="4" class="sep"></td></tr>`:''}
+<tr><td class="lb">営業担当</td><td class="vl">${c.pic||''}</td><td class="lb">役職</td><td class="vl"></td></tr>
 </table>
 <div style="text-align:center;font-weight:bold;margin:20px 0 10px;font-size:11pt;">明 細</div>
 <div class="ns"><div class="lb">補足事項</div><div class="cnt">${orderNote.replace(/\n/g,'<br>')}</div></div>
 ${allHtml}
 <table class="ft">${codHtml}${discHtml}
-<tr><td class="tl">消費税額</td><td style="width:20%;text-align:center;background:#f9f9f9;"></td><td class="tv">¥${tax.toLocaleString('ja-JP')}</td></tr>
-<tr><td class="tl">合 計</td><td style="text-align:center;background:#f9f9f9;">${allCr} ケース</td><td class="tv"><strong>¥${fin.toLocaleString('ja-JP')}</strong></td></tr>
+<tr><td class="tl">合 計</td><td class="tq">${allCr.toLocaleString()} ケース</td><td class="tv"><strong>¥${fin.toLocaleString('ja-JP')}</strong><div style="font-size:8pt;font-weight:normal;color:#888;margin-top:2px;">(Đã bao gồm thuế: ¥${tax.toLocaleString('ja-JP')})</div></td></tr>
 </table></div></body></html>`;
   const w=window.open('','_blank');
   w.document.write(html);w.document.close();w.focus();
   setTimeout(()=>w.print(),500);
   if(sheetUrl){
     fetch(sheetUrl,{method:'POST',body:JSON.stringify({action:'saveOrder',data:{
-      customerId:c.id,customerName:c.name,address:c.address||'',chokuId:dc,chokuName:dn,staff:currentStaff||c.pic||'',
+      customerId:c.id,customerName:c.name,address:c.address||'',chokuId:dc,chokuName:dn,staff:c.pic||'',
       items:t.cart.map(it=>{const ep=it.price-(it.discount||0);return{sku:it.sku,name:it.name,nameJP:it.nameJP,qty:it.qty,price:it.price,discount:it.discount||0,total:Math.round(it.isXot?ep*(it.qty/.25):ep*it.qty)};}),
       shippingFee:['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0),
       codFee:cod,discount:disc,tax:tax,grandTotal:fin,deliveryTime:dt,deliveryDate:dDate,note:nt
