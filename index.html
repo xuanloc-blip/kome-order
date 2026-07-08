@@ -543,7 +543,11 @@ function renderProducts(){
 }
 document.getElementById('product-search-input').addEventListener('input',e=>filterProducts(e.target.value));
 document.getElementById('product-search-input').addEventListener('keydown',e=>{
-  if(e.key==='Enter'){ const f=document.querySelector('.product-card'); if(f) f.click(); }
+  if(e.key==='Enter'){
+    const f=document.querySelector('.product-card');
+    if(f) f.click();
+    e.target.select(); // bôi đen toàn bộ để gõ mã mới đè lên luôn
+  }
 });
 
 // ============ CHOKU ============
