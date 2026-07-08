@@ -314,7 +314,6 @@ const STAFF_LIST=[
   {name:'Hà Phi Long',        short:'L', avatar:'./images/long.png'},
 ];
 
-function roundTax(x){ return (x-Math.floor(x))>0.5 ? Math.ceil(x) : Math.floor(x); }
 let sheetUrl=localStorage.getItem(SHEET_URL_KEY)||'';
 let currentStaff=localStorage.getItem(STAFF_KEY)||'';
 let customerData={}, productData=[], chokuData=[];
@@ -641,12 +640,14 @@ function renderCart(){
   }
   t.discount=parseInt(document.getElementById('disc-input').value)||0;
   const fin=Math.max(0,subAll+cod-t.discount);
-  const gTax=(items,r)=>{const g=items.reduce((s,i)=>s+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0);return roundTax(g*r/(100+r));};
-  const cShip=(items,tp)=>{if(t.freeShip[tp]!==null)return t.freeShip[tp];const s=items.reduce((a,i)=>a+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0);return s<20000?items.reduce((a,i)=>a+i.qty,0)*500:0;};
-  const tax8=['dry','cool','cold'].reduce((s,tp)=>s+gTax(t.cart.filter(i=>!TAX10.includes(i.sku)&&i.shippingType===tp),8),0);
-  let tax10=['dry','cool','cold'].reduce((s,tp)=>s+gTax(t.cart.filter(i=>TAX10.includes(i.sku)&&i.shippingType===tp),10),0);
-  tax10+=['dry','cool','cold'].reduce((s,tp)=>s+roundTax(cShip(t.cart.filter(x=>x.shippingType===tp),tp)*10/110),0);
-  if(cod>0) tax10+=roundTax(cod*10/110);
+  const itemSum=items=>items.reduce((s,i)=>s+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0);
+  const cShip=(items,tp)=>{if(t.freeShip[tp]!==null)return t.freeShip[tp];const s=itemSum(items);return s<20000?items.reduce((a,i)=>a+i.qty,0)*500:0;};
+  // Gom toàn đơn theo thuế suất, mỗi suất tính & làm tròn xuống 1 lần (インボイス方式)
+  const goods8=itemSum(t.cart.filter(i=>!TAX10.includes(i.sku)));
+  const goods10=itemSum(t.cart.filter(i=>TAX10.includes(i.sku)));
+  const shipAll=['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0);
+  const tax8=Math.floor(goods8*8/108);
+  const tax10=Math.floor((goods10+shipAll+cod)*10/110);
   const tax=tax8+tax10;
   if(t.discount>0) sumHtml+=`<div class="sum-row disc"><span>割引 (Giảm giá)</span><span>-¥${t.discount.toLocaleString('ja-JP')}</span></div>`;
   sumHtml+=`<div class="sum-row"><span class="sum-label">消費税</span><span>¥${tax.toLocaleString('ja-JP')}</span></div>`;
@@ -709,17 +710,19 @@ function handlePrint(){
 <tr><td colspan="3" style="border:none;"></td><td colspan="2" class="sl">送料</td><td class="sv">¥${ship.toLocaleString('ja-JP')}</td></tr>
 <tr><td colspan="3" style="border:none;"></td><td colspan="2" class="sl total">小計 (${g.label})</td><td class="sv total">¥${gt.toLocaleString('ja-JP')}</td></tr></tbody></table>`;
   });
-  const gTax=(items,r)=>{const g=items.reduce((s,i)=>s+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0);return roundTax(g*r/(100+r));};
-  const tax8=['dry','cool','cold'].reduce((s,tp)=>s+gTax(t.cart.filter(i=>!TAX10.includes(i.sku)&&i.shippingType===tp),8),0);
-  let tax10=['dry','cool','cold'].reduce((s,tp)=>s+gTax(t.cart.filter(i=>TAX10.includes(i.sku)&&i.shippingType===tp),10),0);
-  tax10+=['dry','cool','cold'].reduce((s,tp)=>s+roundTax(cShip(t.cart.filter(x=>x.shippingType===tp),tp)*10/110),0);
+  const itemSum=items=>items.reduce((s,i)=>s+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0);
   let cod=0,codHtml='';
   if(t.customer?.seikyu==='代引請求'){
     const def=grand>=20000?300:330;
     cod=t.customDaibiki!==null?t.customDaibiki:def;
-    tax10+=roundTax(cod*10/110);
     codHtml=`<tr class="cod"><td class="tl">代引き手数料</td><td></td><td class="tv" style="color:#D42D27;">¥${cod.toLocaleString('ja-JP')}</td></tr>`;
   }
+  // Gom toàn đơn theo thuế suất, mỗi suất làm tròn xuống 1 lần (インボイス方式)
+  const goods8=itemSum(t.cart.filter(i=>!TAX10.includes(i.sku)));
+  const goods10=itemSum(t.cart.filter(i=>TAX10.includes(i.sku)));
+  const shipAll=['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0);
+  const tax8=Math.floor(goods8*8/108);
+  const tax10=Math.floor((goods10+shipAll+cod)*10/110);
   const tax=tax8+tax10, disc=t.discount||0;
   const fin=Math.max(0,grand+cod-disc);
   const discHtml=disc>0?`<tr><td class="tl">割引 (Giảm giá)</td><td></td><td class="tv" style="color:#D42D27;">-¥${disc.toLocaleString('ja-JP')}</td></tr>`:'';
