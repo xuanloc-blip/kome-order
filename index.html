@@ -308,7 +308,10 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 // ============ CONFIG ============
 const SHEET_URL_KEY='kome_sheet_url', CACHE_KEY='kome_data_cache', STAFF_KEY='kome_staff';
 const CACHE_TTL=5*60*1000, PAGE_SIZE=18;
-const TAX10=['BS01','BS02','BS04','BS06','HAB05','HAB06','HAL02','HAL03','HAL08','HAL11','LD01','LD02','RV01','RV02','RV03','RV05','RV06','RV07','RV09'];
+const TAX10_CATEGORY='Bia & Rượu'; // Category chịu thuế 10%. Đổi giá trị này nếu tên category trong sheet đổi.
+function isTax10(item){
+  return (item.category||'').trim().toLowerCase()===TAX10_CATEGORY.toLowerCase();
+}
 const STAFF_LIST=[
   {name:'Trình Công Minh',    short:'M', avatar:'./images/minh.png'},
   {name:'Trần Thị Lan Thanh', short:'T', avatar:'./images/thanh.png'},
@@ -625,9 +628,9 @@ function selectChoku(code){
 // ============ CART ============
 function getShipType(cat){
   if(!cat) return 'dry';
-  const c=cat.toLowerCase();
-  if(c.includes('1.đông lạnh')||c.includes('冷凍')) return 'cold';
-  if(c.includes('2.sứa')||c.includes('冷蔵')) return 'cool';
+  const c=cat.trim();
+  if(c.startsWith('1.')) return 'cold';   // 1.Đông lạnh → 冷凍
+  if(c.startsWith('2.')) return 'cool';   // 2.Hàng mát  → 冷蔵
   return 'dry';
 }
 function addToCart(sku){
@@ -640,7 +643,7 @@ function addToCart(sku){
   const q=isXot?0.25:1;
   const ex=t.cart.find(x=>x.sku===sku);
   if(ex) ex.qty=Math.round((ex.qty+q)*100)/100;
-  else t.cart.push({sku:p.sku,name:p.name,nameJP:p.nameJP||'',price:fp,originalPrice:pr,qty:q,isXot,shippingType:getShipType(p.category||''),discount:0});
+  else t.cart.push({sku:p.sku,name:p.name,nameJP:p.nameJP||'',category:p.category||'',price:fp,originalPrice:pr,qty:q,isXot,shippingType:getShipType(p.category||''),discount:0});
   renderCart(); renderTabs();
 }
 function renderCart(){
@@ -682,8 +685,8 @@ function renderCart(){
   const itemSum=items=>items.reduce((s,i)=>s+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0);
   const cShip=(items,tp)=>{if(t.freeShip[tp]!==null)return t.freeShip[tp];const s=itemSum(items);return s<20000?items.reduce((a,i)=>a+i.qty,0)*500:0;};
   // Gom toàn đơn theo thuế suất, mỗi suất tính & làm tròn xuống 1 lần (インボイス方式)
-  const goods8=itemSum(t.cart.filter(i=>!TAX10.includes(i.sku)));
-  const goods10=itemSum(t.cart.filter(i=>TAX10.includes(i.sku)));
+  const goods8=itemSum(t.cart.filter(i=>!isTax10(i)));
+  const goods10=itemSum(t.cart.filter(i=>isTax10(i)));
   const shipAll=['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0);
   const tax8=Math.floor(goods8*8/108);
   const tax10=Math.floor((goods10+shipAll+cod)*10/110);
@@ -757,8 +760,8 @@ function handlePrint(){
     codHtml=`<tr class="cod"><td class="tl">代引き手数料</td><td></td><td class="tv" style="color:#D42D27;">¥${cod.toLocaleString('ja-JP')}</td></tr>`;
   }
   // Gom toàn đơn theo thuế suất, mỗi suất làm tròn xuống 1 lần (インボイス方式)
-  const goods8=itemSum(t.cart.filter(i=>!TAX10.includes(i.sku)));
-  const goods10=itemSum(t.cart.filter(i=>TAX10.includes(i.sku)));
+  const goods8=itemSum(t.cart.filter(i=>!isTax10(i)));
+  const goods10=itemSum(t.cart.filter(i=>isTax10(i)));
   const shipAll=['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0);
   const tax8=Math.floor(goods8*8/108);
   const tax10=Math.floor((goods10+shipAll+cod)*10/110);
