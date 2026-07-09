@@ -317,9 +317,9 @@ const SHEET_URL_KEY='kome_sheet_url', CACHE_KEY='kome_data_cache', STAFF_KEY='ko
 const CACHE_TTL=5*60*1000, PAGE_SIZE=18;
 const TAX10=['BS01','BS02','BS04','BS06','HAB05','HAB06','HAL02','HAL03','HAL08','HAL11','LD01','LD02','RV01','RV02','RV03','RV05','RV06','RV07','RV09'];
 const STAFF_LIST=[
-  {name:'Trịnh Công Minh',    short:'M', avatar:'./images/minh.png'},
+  {name:'Trình Công Minh',    short:'M', avatar:'./images/minh.png'},
   {name:'Trần Thị Lan Thanh', short:'T', avatar:'./images/thanh.png'},
-  {name:'Hà Phi Long',        short:'L', avatar:'./images/long.png'},
+  {name:'Hà Huy Long',        short:'L', avatar:'./images/long.png'},
 ];
 
 let sheetUrl=localStorage.getItem(SHEET_URL_KEY)||'';
@@ -562,24 +562,20 @@ function renderProducts(){
   document.getElementById('btn-next').disabled=currentPage>=tot;
   const sl=filteredProducts.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE);
   document.getElementById('product-grid').innerHTML=sl.map(p=>{
-    const pr=parseFloat((p.price||'').replace(/,/g,''))||0, ps=parseFloat((p.priceSale||'').replace(/,/g,''))||0;
+    const num=v=>parseFloat(String(v||'').replace(/,/g,''))||0;
+    const pr=num(p.price), ps=num(p.priceSale);           // giá thùng / sale thùng
+    const rt=num(p.retail), rts=num(p.retailSale);        // giá lẻ / sale lẻ
     const onSale=ps>0&&ps<pr, fp=onSale?ps:pr;
     const off=onSale?Math.round((1-ps/pr)*100):0;
-    // Quy cách "300g x 12" -> tính giá lẻ/gói nếu có "x N"
     const spec=(p.spec||'').trim();
-    let unitHtml='';
-    const m=spec.match(/[x×]\s*(\d+)/i);
-    if(m){
-      const n=parseInt(m[1],10);
-      if(n>1){
-        const up=Math.round(fp/n);
-        unitHtml=`<span class="pc-price-main">¥${up.toLocaleString('ja-JP')}</span> <span class="pc-price-case">(¥${fp.toLocaleString('ja-JP')})</span>`;
-      }
-    }
-    if(!unitHtml) unitHtml=`<span class="pc-price-main">¥${fp.toLocaleString('ja-JP')}</span>`;
+    // Hiển thị: giá lẻ to (giá thùng trong ngoặc); không có giá lẻ thì hiện giá thùng
+    const showRetail=(onSale?rts:rt)>0;
+    let unitHtml=showRetail
+      ? `<span class="pc-price-main">¥${(onSale?rts:rt).toLocaleString('ja-JP')}</span> <span class="pc-price-case">(¥${fp.toLocaleString('ja-JP')})</span>`
+      : `<span class="pc-price-main">¥${fp.toLocaleString('ja-JP')}</span>`;
     let origHtml='';
     if(onSale){
-      const om=m?`¥${Math.round(pr/parseInt(m[1],10)).toLocaleString('ja-JP')} (¥${pr.toLocaleString('ja-JP')})`:`¥${pr.toLocaleString('ja-JP')}`;
+      const om=(rt>0)?`¥${rt.toLocaleString('ja-JP')} (¥${pr.toLocaleString('ja-JP')})`:`¥${pr.toLocaleString('ja-JP')}`;
       origHtml=`<div class="pc-orig">${om}</div>`;
     }
     const img=p.image?`<img src="${imgSrc(p.image)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=pc-placeholder>📦</div>'">`:`<div class="pc-placeholder">📦</div>`;
