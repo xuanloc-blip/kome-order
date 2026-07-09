@@ -94,16 +94,24 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 #cat-filter::-webkit-scrollbar { display: none; }
 .cat-btn { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--gray4); background: var(--white); font-size: 12px; cursor: pointer; white-space: nowrap; color: var(--gray2); flex-shrink: 0; }
 .cat-btn.active { background: var(--red); color: #fff; border-color: var(--red); font-weight: 700; }
-#product-grid { flex: 1; overflow-y: auto; padding: 10px 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); gap: 10px; align-content: start; }
-.product-card { border: 1px solid var(--gray4); border-radius: var(--radius); cursor: pointer; overflow: hidden; transition: all .15s; background: var(--white); }
-.product-card:hover { border-color: var(--red); box-shadow: 0 3px 12px rgba(212,45,39,.25); transform: translateY(-2px); }
-.product-card img { width: 100%; height: 88px; object-fit: cover; background: var(--gray5); display: block; }
-.pc-placeholder { width: 100%; height: 88px; background: var(--yellow-light); display: flex; align-items: center; justify-content: center; font-size: 28px; }
-.pc-body { padding: 6px 8px 8px; }
-.pc-name { font-size: 12px; font-weight: 600; line-height: 1.3; height: 31px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.pc-sku { font-size: 10px; color: var(--gray3); margin-top: 2px; }
-.pc-price { font-size: 13px; font-weight: 800; color: var(--red); margin-top: 2px; }
-.pc-orig { font-size: 10px; color: var(--gray3); text-decoration: line-through; margin-left: 4px; font-weight: 400; }
+#product-grid { flex: 1; overflow-y: auto; padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; align-content: start; }
+.product-card { position: relative; border: 1px solid var(--gray4); border-radius: 12px; cursor: pointer; overflow: hidden; transition: all .15s; background: var(--white); display: flex; flex-direction: column; }
+.product-card:hover { border-color: var(--red); box-shadow: 0 4px 14px rgba(212,45,39,.22); transform: translateY(-2px); }
+.pc-img-wrap { width: 100%; aspect-ratio: 1/1; background: #fff; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--gray5); overflow: hidden; }
+.pc-img-wrap img { width: 100%; height: 100%; object-fit: contain; padding: 6px; }
+.pc-placeholder { font-size: 40px; }
+.sale-ribbon { position: absolute; top: 14px; left: -30px; background: var(--red); color: #fff; font-size: 11px; font-weight: 800; letter-spacing: 1px; padding: 4px 34px; transform: rotate(-45deg); box-shadow: 0 2px 6px rgba(0,0,0,.25); z-index: 2; }
+.pc-body { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.pc-sku { font-size: 11px; color: var(--gray3); font-weight: 600; }
+.pc-name { font-size: 13px; font-weight: 700; line-height: 1.35; min-height: 35px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pc-spec { font-size: 11px; color: var(--gray2); }
+.pc-exp { font-size: 11px; color: var(--gray2); }
+.pc-exp b { color: var(--gray1); }
+.pc-price-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: auto; padding-top: 4px; }
+.pc-price-main { font-size: 16px; font-weight: 900; color: var(--red); white-space: nowrap; }
+.pc-price-case { font-size: 11px; font-weight: 700; color: var(--red); }
+.pc-orig { font-size: 11px; color: var(--gray3); text-decoration: line-through; font-weight: 500; }
+.pc-off { background: var(--red); color: #fff; font-size: 11px; font-weight: 800; border-radius: 20px; padding: 2px 8px; white-space: nowrap; }
 #pagination { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 8px; border-top: 1px solid var(--gray5); flex-shrink: 0; background: var(--white); }
 #pagination button { width: 32px; height: 32px; border: 1px solid var(--gray4); border-radius: 8px; background: var(--white); cursor: pointer; font-size: 15px; }
 #pagination button:hover:not(:disabled) { background: var(--red-light); border-color: var(--red); }
@@ -545,11 +553,40 @@ function renderProducts(){
   const sl=filteredProducts.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE);
   document.getElementById('product-grid').innerHTML=sl.map(p=>{
     const pr=parseFloat((p.price||'').replace(/,/g,''))||0, ps=parseFloat((p.priceSale||'').replace(/,/g,''))||0;
-    const fp=ps>0&&ps<pr?ps:pr;
+    const onSale=ps>0&&ps<pr, fp=onSale?ps:pr;
+    const off=onSale?Math.round((1-ps/pr)*100):0;
+    // Quy cách "300g x 12" -> tính giá lẻ/gói nếu có "x N"
+    const spec=(p.spec||'').trim();
+    let unitHtml='';
+    const m=spec.match(/[x×]\s*(\d+)/i);
+    if(m){
+      const n=parseInt(m[1],10);
+      if(n>1){
+        const up=Math.round(fp/n);
+        unitHtml=`<span class="pc-price-main">¥${up.toLocaleString('ja-JP')}</span> <span class="pc-price-case">(¥${fp.toLocaleString('ja-JP')})</span>`;
+      }
+    }
+    if(!unitHtml) unitHtml=`<span class="pc-price-main">¥${fp.toLocaleString('ja-JP')}</span>`;
+    let origHtml='';
+    if(onSale){
+      const om=m?`¥${Math.round(pr/parseInt(m[1],10)).toLocaleString('ja-JP')} (¥${pr.toLocaleString('ja-JP')})`:`¥${pr.toLocaleString('ja-JP')}`;
+      origHtml=`<div class="pc-orig">${om}</div>`;
+    }
     const img=p.image?`<img src="${p.image}" loading="lazy" onerror="this.outerHTML='<div class=pc-placeholder>📦</div>'">`:`<div class="pc-placeholder">📦</div>`;
-    return `<div class="product-card" onclick="addToCart('${p.sku}')">${img}
-      <div class="pc-body"><div class="pc-name">${p.name}</div><div class="pc-sku">${p.sku}</div>
-      <div class="pc-price">¥${fp.toLocaleString('ja-JP')}${ps>0&&ps<pr?`<span class="pc-orig">¥${pr.toLocaleString('ja-JP')}</span>`:''}</div></div></div>`;
+    return `<div class="product-card" onclick="addToCart('${p.sku}')">
+      ${onSale?`<div class="sale-ribbon">SALE</div>`:''}
+      <div class="pc-img-wrap">${img}</div>
+      <div class="pc-body">
+        <div class="pc-sku">${p.sku}</div>
+        <div class="pc-name">${p.name}</div>
+        ${spec?`<div class="pc-spec">${spec}</div>`:''}
+        ${p.expiry?`<div class="pc-exp"><b>EXP:</b> ${p.expiry}</div>`:''}
+        <div class="pc-price-row">
+          <div>${unitHtml}${origHtml}</div>
+          ${onSale?`<span class="pc-off">-${off}%</span>`:''}
+        </div>
+      </div>
+    </div>`;
   }).join('')||'<div style="grid-column:1/-1;text-align:center;color:var(--gray3);padding:40px;">Không tìm thấy sản phẩm</div>';
 }
 document.getElementById('product-search-input').addEventListener('input',e=>filterProducts(e.target.value));
