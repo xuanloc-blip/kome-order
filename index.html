@@ -94,29 +94,27 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 #cat-filter::-webkit-scrollbar { display: none; }
 .cat-btn { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--gray4); background: var(--white); font-size: 12px; cursor: pointer; white-space: nowrap; color: var(--gray2); flex-shrink: 0; }
 .cat-btn.active { background: var(--red); color: #fff; border-color: var(--red); font-weight: 700; }
-#product-grid { flex: 1; overflow-y: auto; padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; align-content: start; }
-.product-card { position: relative; border: 1px solid var(--gray4); border-radius: 12px; cursor: pointer; overflow: hidden; transition: all .15s; background: var(--white); display: flex; flex-direction: column; }
+#product-grid { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; align-content: start; }
+.product-card { position: relative; border: 1px solid var(--gray4); border-radius: 12px; cursor: pointer; overflow: hidden; transition: all .15s; background: var(--white); display: flex; flex-direction: row; align-items: stretch; min-height: 110px; }
 .product-card:hover { border-color: var(--red); box-shadow: 0 4px 14px rgba(212,45,39,.22); transform: translateY(-2px); }
-.pc-img-wrap { width: 100%; aspect-ratio: 1/1; background: #fff; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--gray5); overflow: hidden; }
-.pc-img-wrap img { width: 100%; height: 100%; object-fit: contain; padding: 6px; }
-.pc-placeholder { font-size: 40px; }
-.sale-ribbon { position: absolute; top: 14px; left: -30px; background: var(--red); color: #fff; font-size: 11px; font-weight: 800; letter-spacing: 1px; padding: 4px 34px; transform: rotate(-45deg); box-shadow: 0 2px 6px rgba(0,0,0,.25); z-index: 2; }
-.pc-body { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 3px; flex: 1; }
-.pc-sku { font-size: 11px; color: var(--gray3); font-weight: 600; }
-.pc-name { font-size: 13px; font-weight: 700; line-height: 1.35; min-height: 35px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.pc-spec { font-size: 11px; color: var(--gray2); }
-.pc-exp { font-size: 11px; color: var(--gray2); }
+.pc-img-wrap { width: 42%; min-width: 76px; max-width: 130px; flex-shrink: 0; background: #fff; display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--gray5); overflow: hidden; }
+.pc-img-wrap img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+.pc-placeholder { font-size: 34px; }
+.sale-ribbon { position: absolute; top: 10px; left: -32px; background: var(--red); color: #fff; font-size: 10px; font-weight: 800; letter-spacing: 1px; padding: 3px 34px; transform: rotate(-45deg); box-shadow: 0 2px 6px rgba(0,0,0,.25); z-index: 2; }
+.pc-body { padding: 7px 9px 8px; display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.pc-sku { font-size: 10px; color: var(--gray3); font-weight: 600; }
+.pc-name { font-size: 12px; font-weight: 700; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pc-spec { font-size: 10px; color: var(--gray2); }
+.pc-exp { font-size: 10px; color: var(--gray2); }
 .pc-exp b { color: var(--gray1); }
-.pc-price-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: auto; padding-top: 4px; }
-.pc-price-main { font-size: 16px; font-weight: 900; color: var(--red); white-space: nowrap; }
-.pc-price-case { font-size: 11px; font-weight: 700; color: var(--red); }
-.pc-orig { font-size: 11px; color: var(--gray3); text-decoration: line-through; font-weight: 500; }
-.pc-off { background: var(--red); color: #fff; font-size: 11px; font-weight: 800; border-radius: 20px; padding: 2px 8px; white-space: nowrap; }
-#pagination { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 8px; border-top: 1px solid var(--gray5); flex-shrink: 0; background: var(--white); }
-#pagination button { width: 32px; height: 32px; border: 1px solid var(--gray4); border-radius: 8px; background: var(--white); cursor: pointer; font-size: 15px; }
-#pagination button:hover:not(:disabled) { background: var(--red-light); border-color: var(--red); }
-#pagination button:disabled { opacity: .35; cursor: default; }
-#page-info { font-size: 13px; color: var(--gray2); font-weight: 600; }
+.pc-price-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: auto; padding-top: 3px; flex-wrap: wrap; }
+.pc-price-main { font-size: 14px; font-weight: 900; color: var(--red); white-space: nowrap; }
+.pc-price-case { font-size: 10px; font-weight: 700; color: var(--red); }
+.pc-orig { font-size: 10px; color: var(--gray3); text-decoration: line-through; font-weight: 500; }
+.pc-off { background: var(--red); color: #fff; font-size: 10px; font-weight: 800; border-radius: 20px; padding: 2px 7px; white-space: nowrap; }
+@media (max-width: 1500px) { #product-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 1200px) { #product-grid { grid-template-columns: repeat(3, 1fr); } }
+
 
 /* Col 2: Order */
 #col-order { display: flex; flex-direction: column; background: #fffdf8; min-width: 0; min-height: 0; }
@@ -268,11 +266,6 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
     </div>
     <div id="cat-filter"></div>
     <div id="product-grid"></div>
-    <div id="pagination">
-      <button id="btn-prev" onclick="changePage(-1)">‹</button>
-      <span id="page-info">1 / 1</span>
-      <button id="btn-next" onclick="changePage(1)">›</button>
-    </div>
   </div>
 
   <!-- COL 2: ORDER -->
@@ -317,9 +310,9 @@ const SHEET_URL_KEY='kome_sheet_url', CACHE_KEY='kome_data_cache', STAFF_KEY='ko
 const CACHE_TTL=5*60*1000, PAGE_SIZE=18;
 const TAX10=['BS01','BS02','BS04','BS06','HAB05','HAB06','HAL02','HAL03','HAL08','HAL11','LD01','LD02','RV01','RV02','RV03','RV05','RV06','RV07','RV09'];
 const STAFF_LIST=[
-  {name:'Trình Công Minh',    short:'M', avatar:'./images/minh.png'},
+  {name:'Trịnh Công Minh',    short:'M', avatar:'./images/minh.png'},
   {name:'Trần Thị Lan Thanh', short:'T', avatar:'./images/thanh.png'},
-  {name:'Hà Huy Long',        short:'L', avatar:'./images/long.png'},
+  {name:'Hà Phi Long',        short:'L', avatar:'./images/long.png'},
 ];
 
 let sheetUrl=localStorage.getItem(SHEET_URL_KEY)||'';
@@ -541,9 +534,15 @@ function filterProducts(q){
   });
   currentPage=1; renderProducts();
 }
-function changePage(d){
-  const tot=Math.ceil(filteredProducts.length/PAGE_SIZE)||1;
-  currentPage=Math.max(1,Math.min(tot,currentPage+d)); renderProducts();
+function fmtDate(v){
+  if(!v) return '';
+  const s=String(v).trim();
+  // Đã đúng dạng yyyy/mm/dd
+  let m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if(m) return `${m[1]}/${String(m[2]).padStart(2,'0')}/${String(m[3]).padStart(2,'0')}`;
+  const d=new Date(s);
+  if(!isNaN(d)) return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+  return s;
 }
 function imgSrc(u){
   if(!u) return '';
@@ -556,11 +555,8 @@ function imgSrc(u){
   return u;
 }
 function renderProducts(){
-  const tot=Math.ceil(filteredProducts.length/PAGE_SIZE)||1;
-  document.getElementById('page-info').textContent=`${currentPage} / ${tot}`;
-  document.getElementById('btn-prev').disabled=currentPage<=1;
-  document.getElementById('btn-next').disabled=currentPage>=tot;
-  const sl=filteredProducts.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE);
+  const sl=filteredProducts;
+  document.getElementById('product-grid').scrollTop=0;
   document.getElementById('product-grid').innerHTML=sl.map(p=>{
     const num=v=>parseFloat(String(v||'').replace(/,/g,''))||0;
     const pr=num(p.price), ps=num(p.priceSale);           // giá thùng / sale thùng
@@ -586,7 +582,7 @@ function renderProducts(){
         <div class="pc-sku">${p.sku}</div>
         <div class="pc-name">${p.name}</div>
         ${spec?`<div class="pc-spec">${spec}</div>`:''}
-        ${p.expiry?`<div class="pc-exp"><b>EXP:</b> ${p.expiry}</div>`:''}
+        ${p.expiry?`<div class="pc-exp"><b>EXP:</b> ${fmtDate(p.expiry)}</div>`:''}
         <div class="pc-price-row">
           <div>${unitHtml}${origHtml}</div>
           ${onSale?`<span class="pc-off">-${off}%</span>`:''}
