@@ -100,18 +100,18 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .pc-img-wrap { width: 42%; min-width: 76px; max-width: 130px; flex-shrink: 0; background: #fff; display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--gray5); overflow: hidden; }
 .pc-img-wrap img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
 .pc-placeholder { font-size: 34px; }
-.sale-ribbon { position: absolute; top: 10px; left: -32px; background: var(--red); color: #fff; font-size: 10px; font-weight: 800; letter-spacing: 1px; padding: 3px 34px; transform: rotate(-45deg); box-shadow: 0 2px 6px rgba(0,0,0,.25); z-index: 2; }
+.pc-off-badge { position: absolute; top: 6px; right: 6px; background: var(--red); color: #fff; font-size: 10px; font-weight: 800; border-radius: 20px; padding: 3px 9px; box-shadow: 0 2px 6px rgba(0,0,0,.25); z-index: 3; }
 .pc-body { padding: 7px 9px 8px; display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .pc-sku { font-size: 10px; color: var(--gray3); font-weight: 600; }
-.pc-name { font-size: 12px; font-weight: 700; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pc-name { font-size: 12px; font-weight: 700; line-height: 1.3; white-space: nowrap; overflow: hidden; -webkit-mask-image: linear-gradient(to right, #000 78%, transparent 100%); mask-image: linear-gradient(to right, #000 78%, transparent 100%); }
 .pc-spec { font-size: 10px; color: var(--gray2); }
 .pc-exp { font-size: 10px; color: var(--gray2); }
 .pc-exp b { color: var(--gray1); }
 .pc-price-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: auto; padding-top: 3px; flex-wrap: wrap; }
-.pc-price-main { font-size: 14px; font-weight: 900; color: var(--red); white-space: nowrap; }
+.pc-price-main { font-size: 14px; font-weight: 900; color: var(--gray1); white-space: nowrap; }
+.pc-price-main.on-sale { color: var(--red); }
 .pc-price-case { font-size: 10px; font-weight: 700; color: var(--red); }
 .pc-orig { font-size: 10px; color: var(--gray3); text-decoration: line-through; font-weight: 500; }
-.pc-off { background: var(--red); color: #fff; font-size: 10px; font-weight: 800; border-radius: 20px; padding: 2px 7px; white-space: nowrap; }
 @media (max-width: 1500px) { #product-grid { grid-template-columns: repeat(4, 1fr); } }
 @media (max-width: 1200px) { #product-grid { grid-template-columns: repeat(3, 1fr); } }
 
@@ -569,9 +569,10 @@ function renderProducts(){
     const spec=(p.spec||'').trim();
     // Hiển thị: giá lẻ to (giá thùng trong ngoặc); không có giá lẻ thì hiện giá thùng
     const showRetail=(onSale?rts:rt)>0;
+    const priceCls = onSale ? 'pc-price-main on-sale' : 'pc-price-main';
     let unitHtml=showRetail
-      ? `<span class="pc-price-main">¥${(onSale?rts:rt).toLocaleString('ja-JP')}</span> <span class="pc-price-case">(¥${fp.toLocaleString('ja-JP')})</span>`
-      : `<span class="pc-price-main">¥${fp.toLocaleString('ja-JP')}</span>`;
+      ? `<span class="${priceCls}">¥${(onSale?rts:rt).toLocaleString('ja-JP')}</span> <span class="pc-price-case">(¥${fp.toLocaleString('ja-JP')})</span>`
+      : `<span class="${priceCls}">¥${fp.toLocaleString('ja-JP')}</span>`;
     let origHtml='';
     if(onSale){
       const om=(rt>0)?`¥${rt.toLocaleString('ja-JP')} (¥${pr.toLocaleString('ja-JP')})`:`¥${pr.toLocaleString('ja-JP')}`;
@@ -579,16 +580,15 @@ function renderProducts(){
     }
     const img=p.image?`<img src="${imgSrc(p.image)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=pc-placeholder>📦</div>'">`:`<div class="pc-placeholder">📦</div>`;
     return `<div class="product-card" onclick="addToCart('${p.sku}')">
-      ${onSale?`<div class="sale-ribbon">SALE</div>`:''}
+      ${onSale?`<div class="pc-off-badge">-${off}%</div>`:''}
       <div class="pc-img-wrap">${img}</div>
       <div class="pc-body">
         <div class="pc-sku">${p.sku}</div>
-        <div class="pc-name">${p.name}</div>
+        <div class="pc-name" title="${p.name}">${p.name}</div>
         ${spec?`<div class="pc-spec">${spec}</div>`:''}
         ${p.expiry?`<div class="pc-exp"><b>EXP:</b> ${fmtDate(p.expiry)}</div>`:''}
         <div class="pc-price-row">
           <div>${unitHtml}${origHtml}</div>
-          ${onSale?`<span class="pc-off">-${off}%</span>`:''}
         </div>
       </div>
     </div>`;
