@@ -317,9 +317,9 @@ const SHEET_URL_KEY='kome_sheet_url', CACHE_KEY='kome_data_cache', STAFF_KEY='ko
 const CACHE_TTL=5*60*1000, PAGE_SIZE=18;
 const TAX10=['BS01','BS02','BS04','BS06','HAB05','HAB06','HAL02','HAL03','HAL08','HAL11','LD01','LD02','RV01','RV02','RV03','RV05','RV06','RV07','RV09'];
 const STAFF_LIST=[
-  {name:'Trình Công Minh',    short:'M', avatar:'./images/minh.png'},
+  {name:'Trịnh Công Minh',    short:'M', avatar:'./images/minh.png'},
   {name:'Trần Thị Lan Thanh', short:'T', avatar:'./images/thanh.png'},
-  {name:'Hà Huy Long',        short:'L', avatar:'./images/long.png'},
+  {name:'Hà Phi Long',        short:'L', avatar:'./images/long.png'},
 ];
 
 let sheetUrl=localStorage.getItem(SHEET_URL_KEY)||'';
@@ -545,6 +545,16 @@ function changePage(d){
   const tot=Math.ceil(filteredProducts.length/PAGE_SIZE)||1;
   currentPage=Math.max(1,Math.min(tot,currentPage+d)); renderProducts();
 }
+function imgSrc(u){
+  if(!u) return '';
+  u=String(u).trim();
+  // Nhận diện file ID từ các dạng link Google Drive
+  let id='';
+  let m=u.match(/drive\.google\.com\/file\/d\/([\w-]+)/); if(m) id=m[1];
+  if(!id){ m=u.match(/[?&]id=([\w-]+)/); if(m&&u.includes('google.com')) id=m[1]; }
+  if(id) return 'https://drive.google.com/thumbnail?id='+id+'&sz=w400';
+  return u;
+}
 function renderProducts(){
   const tot=Math.ceil(filteredProducts.length/PAGE_SIZE)||1;
   document.getElementById('page-info').textContent=`${currentPage} / ${tot}`;
@@ -572,7 +582,7 @@ function renderProducts(){
       const om=m?`¥${Math.round(pr/parseInt(m[1],10)).toLocaleString('ja-JP')} (¥${pr.toLocaleString('ja-JP')})`:`¥${pr.toLocaleString('ja-JP')}`;
       origHtml=`<div class="pc-orig">${om}</div>`;
     }
-    const img=p.image?`<img src="${p.image}" loading="lazy" onerror="this.outerHTML='<div class=pc-placeholder>📦</div>'">`:`<div class="pc-placeholder">📦</div>`;
+    const img=p.image?`<img src="${imgSrc(p.image)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=pc-placeholder>📦</div>'">`:`<div class="pc-placeholder">📦</div>`;
     return `<div class="product-card" onclick="addToCart('${p.sku}')">
       ${onSale?`<div class="sale-ribbon">SALE</div>`:''}
       <div class="pc-img-wrap">${img}</div>
