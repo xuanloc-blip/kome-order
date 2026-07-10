@@ -316,6 +316,7 @@ const STAFF_LIST=[
   {name:'Trình Công Minh',    short:'M', avatar:'./images/minh.png'},
   {name:'Trần Thị Lan Thanh', short:'T', avatar:'./images/thanh.png'},
   {name:'Hà Huy Long',        short:'L', avatar:'./images/long.png'},
+  {name:'愛華 本田',           short:'愛', avatar:'./images/aika.png'},
 ];
 
 let sheetUrl=localStorage.getItem(SHEET_URL_KEY)||'';
@@ -819,6 +820,7 @@ function handlePrint(){
   const fin=Math.max(0,grand+cod-disc);
   const discHtml=disc>0?`<tr><td class="tl">割引 (Giảm giá)</td><td></td><td class="tv" style="color:#D42D27;">-¥${disc.toLocaleString('ja-JP')}</td></tr>`:'';
   const c=t.customer;
+  const salesRep = (currentStaff==='愛華 本田') ? currentStaff : (c.pic||'');
   const html=`<html><head><title>注文書 - ${c.name}</title><meta charset="UTF-8"><style>
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;margin:0;font-size:8pt;color:#000;background:#f4f4f4}
 #inv{max-width:1000px;margin:0 auto;padding:10px 12px;background:#fff}
@@ -849,7 +851,7 @@ table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:4p
 ${(dc||dn)?`<tr><td class="lb">納品先コード</td><td class="vl">${dc}</td><td class="lb">納品先名</td><td class="vl">${dn}</td></tr>
 <tr><td class="lb">住所</td><td class="vl" colspan="3">${da}</td></tr>
 <tr><td colspan="4" class="sep"></td></tr>`:''}
-<tr><td class="lb">営業担当</td><td class="vl">${c.pic||''}</td><td class="lb">役職</td><td class="vl"></td></tr>
+<tr><td class="lb">営業担当</td><td class="vl">${salesRep}</td><td class="lb">役職</td><td class="vl"></td></tr>
 </table>
 <div style="text-align:center;font-weight:bold;margin:14px 0 8px;font-size:11pt;">明 細</div>
 <div class="ns"><div class="lb">補足事項</div><div class="cnt">${orderNote.replace(/\n/g,'<br>')}</div></div>
