@@ -868,7 +868,10 @@ ${allHtml}
       items:t.cart.map(it=>{const ep=it.price-(it.discount||0);return{sku:it.sku,name:it.name,nameJP:it.nameJP,qty:it.qty,price:it.price,discount:it.discount||0,total:Math.round(it.isXot?ep*(it.qty/.25):ep*it.qty)};}),
       shippingFee:['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0),
       codFee:cod,discount:disc,tax:tax,grandTotal:fin,deliveryTime:dt,deliveryDate:dDate,note:nt
-    }})}).catch(()=>{});
+    }})})
+    .then(r=>r.text())
+    .then(txt=>console.log('[saveOrder] Phản hồi từ server:', txt))
+    .catch(err=>console.error('[saveOrder] Lỗi khi lưu đơn hàng:', err));
   }
 }
 
