@@ -95,24 +95,24 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .cat-btn { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--gray4); background: var(--white); font-size: 12px; cursor: pointer; white-space: nowrap; color: var(--gray2); flex-shrink: 0; }
 .cat-btn.active { background: var(--red); color: #fff; border-color: var(--red); font-weight: 700; }
 #product-grid { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; align-content: start; }
-.product-card { position: relative; border: 1px solid var(--gray4); border-radius: 12px; cursor: pointer; overflow: hidden; transition: all .15s; background: var(--white); display: flex; flex-direction: row; align-items: stretch; min-height: 124px; }
+.product-card { position: relative; border: 1px solid var(--gray4); border-radius: 12px; cursor: pointer; overflow: hidden; transition: all .15s; background: var(--white); display: flex; flex-direction: row; align-items: stretch; min-height: 110px; }
 .product-card:hover { border-color: var(--red); box-shadow: 0 4px 14px rgba(212,45,39,.22); transform: translateY(-2px); }
 .pc-img-wrap { width: 42%; min-width: 76px; max-width: 130px; flex-shrink: 0; background: #fff; display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--gray5); overflow: hidden; }
 .pc-img-wrap img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
 .pc-placeholder { font-size: 34px; }
-.pc-off-badge { position: absolute; top: 6px; right: 6px; background: var(--red); color: #fff; font-size: 10px; font-weight: 800; border-radius: 20px; padding: 5px 9px; line-height: 1; box-shadow: 0 2px 6px rgba(0,0,0,.25); z-index: 3; }
+.sale-ribbon { position: absolute; top: 10px; left: -32px; background: var(--red); color: #fff; font-size: 10px; font-weight: 800; letter-spacing: 1px; padding: 3px 34px; transform: rotate(-45deg); box-shadow: 0 2px 6px rgba(0,0,0,.25); z-index: 2; }
 .pc-body { padding: 7px 9px 8px; display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .pc-sku { font-size: 10px; color: var(--gray3); font-weight: 600; }
-.pc-name {font-size: 12px;font-weight: 700;line-height: 1.3; display: -webkit-box;-webkit-line-clamp: 2;-webkit-box-orient: vertical;overflow: hidden;word-break: break-word;min-height: 31px; /* giữ chỗ cho đủ 2 dòng, tránh card lệch cao thấp */}
+.pc-name { font-size: 12px; font-weight: 700; line-height: 1.3; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pc-spec { font-size: 10px; color: var(--gray2); }
 .pc-exp { font-size: 10px; color: var(--gray2); }
 .pc-exp b { color: var(--gray1); }
 .pc-price-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: auto; padding-top: 3px; flex-wrap: wrap; }
 .pc-price-main { font-size: 14px; font-weight: 900; color: var(--gray1); white-space: nowrap; }
-.pc-price-main.on-sale { color: var(--red); }
+.pc-price-main.sale, .pc-price-case.sale { color: var(--red); }
 .pc-price-case { font-size: 10px; font-weight: 700; color: var(--gray2); }
-.pc-price-case.on-sale { color: var(--red); }
-.pc-orig { font-size: 10px; color: var(--gray3); text-decoration: line-through; font-weight: 500; }
+.pc-orig { font-size: 10px; color: var(--gray3); text-decoration: line-through; font-weight: 600; line-height: 1.2; }
+.pc-off { position: absolute; top: 4px; right: 10px; background: var(--red); color: #fff; font-size: 10px; font-weight: 800; border-radius: 20px; padding: 2px 7px; white-space: nowrap; z-index: 3; }
 @media (max-width: 1500px) { #product-grid { grid-template-columns: repeat(4, 1fr); } }
 @media (max-width: 1200px) { #product-grid { grid-template-columns: repeat(3, 1fr); } }
 
@@ -309,10 +309,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 // ============ CONFIG ============
 const SHEET_URL_KEY='kome_sheet_url', CACHE_KEY='kome_data_cache', STAFF_KEY='kome_staff';
 const CACHE_TTL=5*60*1000, PAGE_SIZE=18;
-const TAX10_CATEGORY='Bia & Rượu'; // Category chịu thuế 10%. Đổi giá trị này nếu tên category trong sheet đổi.
-function isTax10(item){
-  return (item.category||'').trim().toLowerCase()===TAX10_CATEGORY.toLowerCase();
-}
+const TAX10=['BS01','BS02','BS04','BS06','HAB05','HAB06','HAL02','HAL03','HAL08','HAL11','LD01','LD02','RV01','RV02','RV03','RV05','RV06','RV07','RV09'];
 const STAFF_LIST=[
   {name:'Trình Công Minh',    short:'M', avatar:'./images/minh.png'},
   {name:'Trần Thị Lan Thanh', short:'T', avatar:'./images/thanh.png'},
@@ -558,6 +555,42 @@ function imgSrc(u){
   if(id) return 'https://drive.google.com/thumbnail?id='+id+'&sz=w400';
   return u;
 }
+function packQty(v){
+  const s=String(v||'');
+  const m=s.match(/[x×]\s*(\d+(?:\.\d+)?)/i);
+  return m?parseFloat(m[1])||0:0;
+}
+function productDisplayName(v){
+  let s=String(v||'').trim();
+  if(!s) return '';
+  s=s
+    .replace(/<br\s*\/?>/gi,'\n')
+    .replace(/\\n/g,'\n')
+    .split(/\r?\n/)[0]
+    .split(/\s+[\u2013\u2014-]\s+/)[0]
+    .trim();
+  const parts=s.split(/\s+/);
+  const hasVietnamese=ch=>/[^\x00-\x7F]/.test(ch);
+  const isEnglishToken=t=>/^[A-Za-z0-9'&().,+/-]+$/.test(t);
+  const isSubNameStart=t=>/^(A-?ONE|FOCO|HALICO|Wafers?|Crepe|Stick|Chocolate|Flavor|Passion|Fruit|Juice|Nep|Cam|Liqueur|Ramen|Tom|Yum|Beef|Pho|Soup|Sauce|Fish|Meat|Braising|Pork|Noodles?|Drink|Base|Spicy|Braised|Grilled|Shrimp|Chips?|Big|Size|Spare|Rib|Sweet|Sour)$/i.test(t);
+  if(parts.some(hasVietnamese)){
+    for(let i=1;i<parts.length;i++){
+      const suffix=parts.slice(i);
+      if(suffix.length>=1&&isSubNameStart(suffix[0])&&suffix.every(isEnglishToken)){
+        return parts.slice(0,i).join(' ').trim();
+      }
+    }
+  }
+  return s.replace(/\s{2,}/g,' ');
+}
+function fieldVal(row,key){
+  if(!row) return '';
+  const target=String(key).toLowerCase().replace(/[\s_-]/g,'');
+  for(const [k,v] of Object.entries(row)){
+    if(String(k).toLowerCase().replace(/[\s_-]/g,'')===target) return v;
+  }
+  return '';
+}
 function renderProducts(){
   const sl=filteredProducts;
   document.getElementById('product-grid').scrollTop=0;
@@ -565,32 +598,44 @@ function renderProducts(){
     const num=v=>parseFloat(String(v||'').replace(/,/g,''))||0;
     const pr=num(p.price), ps=num(p.priceSale);           // giá thùng / sale thùng
     const rt=num(p.retail), rts=num(p.retailSale);        // giá lẻ / sale lẻ
-    const onSale=ps>0&&ps<pr, fp=onSale?ps:pr;
-    const off=onSale?Math.round((1-ps/pr)*100):0;
-    const spec=(p.spec||'').trim();
+    const packsize=String(fieldVal(p,'packsize')||'').trim();
+    const qtyInCase=packQty(packsize);
+    const unitFromCase=v=>qtyInCase>0?Math.round(v/qtyInCase):0;
+    const baseRetail=rt||unitFromCase(pr);
+    const saleRetail=rts||unitFromCase(ps);
+    const onSale=(ps>0&&ps<pr)||(saleRetail>0&&saleRetail<baseRetail);
+    const offBase=(ps>0&&ps<pr)?pr:baseRetail;
+    const offSale=(ps>0&&ps<pr)?ps:saleRetail;
+    const off=(onSale&&offBase>0)?Math.round((1-offSale/offBase)*100):0;
+    const casePrice=onSale&&ps>0?ps:pr;
+    const retailPrice=onSale&&saleRetail>0?saleRetail:baseRetail;
+    const origCasePrice=pr;
+    const origRetailPrice=baseRetail;
+    const productName=productDisplayName(p.name);
+    const exp=(p.expirationDate||p.expiry||'').trim();
     // Hiển thị: giá lẻ to (giá thùng trong ngoặc); không có giá lẻ thì hiện giá thùng
-    const showRetail=(onSale?rts:rt)>0;
-    const priceCls = onSale ? 'pc-price-main on-sale' : 'pc-price-main';
-    const caseCls  = onSale ? 'pc-price-case on-sale' : 'pc-price-case';
+    const showRetail=retailPrice>0;
+    const priceClass=onSale?' sale':'';
     let unitHtml=showRetail
-      ? `<span class="${priceCls}">¥${(onSale?rts:rt).toLocaleString('ja-JP')}</span> <span class="${caseCls}">(¥${fp.toLocaleString('ja-JP')})</span>`
-      : `<span class="${priceCls}">¥${fp.toLocaleString('ja-JP')}</span>`;
+      ? `<span class="pc-price-main${priceClass}">¥${retailPrice.toLocaleString('ja-JP')}</span> <span class="pc-price-case${priceClass}">(¥${casePrice.toLocaleString('ja-JP')})</span>`
+      : `<span class="pc-price-main${priceClass}">¥${casePrice.toLocaleString('ja-JP')}</span>`;
     let origHtml='';
     if(onSale){
-      const om=(rt>0)?`¥${rt.toLocaleString('ja-JP')} (¥${pr.toLocaleString('ja-JP')})`:`¥${pr.toLocaleString('ja-JP')}`;
+      const om=origRetailPrice>0?`¥${origRetailPrice.toLocaleString('ja-JP')} (¥${origCasePrice.toLocaleString('ja-JP')})`:`¥${origCasePrice.toLocaleString('ja-JP')}`;
       origHtml=`<div class="pc-orig">${om}</div>`;
     }
     const img=p.image?`<img src="${imgSrc(p.image)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=pc-placeholder>📦</div>'">`:`<div class="pc-placeholder">📦</div>`;
     return `<div class="product-card" onclick="addToCart('${p.sku}')">
-      ${onSale?`<div class="pc-off-badge">-${off}%</div>`:''}
+      ${onSale?`<div class="sale-ribbon">SALE</div>`:''}
       <div class="pc-img-wrap">${img}</div>
       <div class="pc-body">
         <div class="pc-sku">${p.sku}</div>
-        <div class="pc-name" title="${p.name}">${p.name}</div>
-        ${spec?`<div class="pc-spec">${spec}</div>`:''}
-        ${p.expiry?`<div class="pc-exp"><b>EXP:</b> ${fmtDate(p.expiry)}</div>`:''}
+        <div class="pc-name">${productName}</div>
+        ${packsize?`<div class="pc-spec">${packsize}</div>`:''}
+        ${exp?`<div class="pc-exp"><b>EXP:</b> ${fmtDate(exp)}</div>`:''}
         <div class="pc-price-row">
           <div>${unitHtml}${origHtml}</div>
+          ${onSale?`<span class="pc-off">-${off}%</span>`:''}
         </div>
       </div>
     </div>`;
@@ -630,9 +675,9 @@ function selectChoku(code){
 // ============ CART ============
 function getShipType(cat){
   if(!cat) return 'dry';
-  const c=cat.trim();
-  if(c.startsWith('1.')) return 'cold';   // 1.Đông lạnh → 冷凍
-  if(c.startsWith('2.')) return 'cool';   // 2.Hàng mát  → 冷蔵
+  const c=cat.toLowerCase();
+  if(c.includes('1.đông lạnh')||c.includes('冷凍')) return 'cold';
+  if(c.includes('2.sứa')||c.includes('冷蔵')) return 'cool';
   return 'dry';
 }
 function addToCart(sku){
@@ -645,7 +690,7 @@ function addToCart(sku){
   const q=isXot?0.25:1;
   const ex=t.cart.find(x=>x.sku===sku);
   if(ex) ex.qty=Math.round((ex.qty+q)*100)/100;
-  else t.cart.push({sku:p.sku,name:p.name,nameJP:p.nameJP||'',category:p.category||'',price:fp,originalPrice:pr,qty:q,isXot,shippingType:getShipType(p.category||''),discount:0});
+  else t.cart.push({sku:p.sku,name:p.name,nameJP:p.nameJP||'',price:fp,originalPrice:pr,qty:q,isXot,shippingType:getShipType(p.category||''),discount:0});
   renderCart(); renderTabs();
 }
 function renderCart(){
@@ -687,8 +732,8 @@ function renderCart(){
   const itemSum=items=>items.reduce((s,i)=>s+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0);
   const cShip=(items,tp)=>{if(t.freeShip[tp]!==null)return t.freeShip[tp];const s=itemSum(items);return s<20000?items.reduce((a,i)=>a+i.qty,0)*500:0;};
   // Gom toàn đơn theo thuế suất, mỗi suất tính & làm tròn xuống 1 lần (インボイス方式)
-  const goods8=itemSum(t.cart.filter(i=>!isTax10(i)));
-  const goods10=itemSum(t.cart.filter(i=>isTax10(i)));
+  const goods8=itemSum(t.cart.filter(i=>!TAX10.includes(i.sku)));
+  const goods10=itemSum(t.cart.filter(i=>TAX10.includes(i.sku)));
   const shipAll=['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0);
   const tax8=Math.floor(goods8*8/108);
   const tax10=Math.floor((goods10+shipAll+cod)*10/110);
@@ -762,8 +807,8 @@ function handlePrint(){
     codHtml=`<tr class="cod"><td class="tl">代引き手数料</td><td></td><td class="tv" style="color:#D42D27;">¥${cod.toLocaleString('ja-JP')}</td></tr>`;
   }
   // Gom toàn đơn theo thuế suất, mỗi suất làm tròn xuống 1 lần (インボイス方式)
-  const goods8=itemSum(t.cart.filter(i=>!isTax10(i)));
-  const goods10=itemSum(t.cart.filter(i=>isTax10(i)));
+  const goods8=itemSum(t.cart.filter(i=>!TAX10.includes(i.sku)));
+  const goods10=itemSum(t.cart.filter(i=>TAX10.includes(i.sku)));
   const shipAll=['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0);
   const tax8=Math.floor(goods8*8/108);
   const tax10=Math.floor((goods10+shipAll+cod)*10/110);
