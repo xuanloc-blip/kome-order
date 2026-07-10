@@ -214,9 +214,19 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .history-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
 .history-table th { position: sticky; top: 0; background: var(--red); color: #fff; padding: 8px; text-align: left; white-space: nowrap; }
 .history-table td { border-bottom: 1px solid var(--gray5); padding: 8px; vertical-align: top; word-break: break-word; }
-.history-table tr:nth-child(even) td { background: #fffaf0; }
+.history-table tr.history-row { cursor: pointer; }
+.history-table tr.history-row:hover td { background: #fff3d6; }
+.history-table tr.history-row.active td { background: #fdeceb; }
 .history-time { font-weight: 800; color: var(--red-dark); white-space: nowrap; }
 .history-total { text-align: right; font-weight: 800; }
+.history-order-id { font-weight: 800; color: var(--red-dark); white-space: nowrap; }
+.history-detail-cell { background: #fffdf8; padding: 0 !important; }
+.history-detail { padding: 12px 14px 14px; border-left: 4px solid var(--yellow); }
+.history-detail-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 12px; margin-bottom: 12px; font-size: 12px; }
+.history-detail-grid b { display: block; color: var(--gray3); font-size: 10px; margin-bottom: 2px; }
+.history-items { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
+.history-items th { background: #444; color: #fff; padding: 6px; text-align: left; }
+.history-items td { border-bottom: 1px solid var(--gray5); padding: 6px; }
 .history-empty { padding: 28px; text-align: center; color: var(--gray3); }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -352,6 +362,7 @@ const STAFF_LIST=[
 let sheetUrl=localStorage.getItem(SHEET_URL_KEY)||'';
 let currentStaff=localStorage.getItem(STAFF_KEY)||'';
 let customerData={}, productData=[], chokuData=[], orderHistoryData=[];
+let expandedHistoryOrderId='';
 let currentPage=1, filteredProducts=[], currentCat='all';
 let tabs=[], activeTabId=null, tabCounter=0;
 let msgWindow=null;
@@ -485,27 +496,91 @@ async function loadOrderHistory(force=false){
 function renderOrderHistory(){
   const body=document.getElementById('history-body');
   const q=(document.getElementById('history-search')?.value||'').toLowerCase().trim();
-  const rows=orderHistoryData.filter(o=>{
+  const rows=getHistoryOrders().filter(o=>{
     if(!q) return true;
-    return `${o.time||''} ${o.customerId||''} ${o.customerName||''} ${o.sku||''} ${o.productName||''} ${o.productNameJP||''} ${o.note||''}`.toLowerCase().includes(q);
+    const items=(o.items||[]).map(i=>`${i.sku||''} ${i.productName||''} ${i.productNameJP||''}`).join(' ');
+    return `${o.orderId||''} ${o.time||''} ${o.customerId||''} ${o.customerName||''} ${o.grandTotal||''} ${o.note||''} ${items}`.toLowerCase().includes(q);
   });
   if(!rows.length){ body.innerHTML='<div class="history-empty">Không có dữ liệu phù hợp</div>'; return; }
   body.innerHTML=`<table class="history-table"><thead><tr>
-    <th style="width:122px;">Thời gian</th><th style="width:82px;">Mã KH</th><th>Khách hàng</th>
-    <th style="width:92px;">Mã hàng</th><th>Sản phẩm</th><th style="width:62px;">SL</th><th style="width:94px;">Tổng</th><th style="width:130px;">Ghi chú</th>
-  </tr></thead><tbody>${rows.map(o=>`<tr>
+    <th style="width:150px;">Mã đơn hàng</th><th style="width:140px;">Thời gian</th><th style="width:90px;">Mã KH</th><th>Tên khách hàng</th><th style="width:110px;">Tổng tiền</th>
+  </tr></thead><tbody>${rows.map(o=>renderHistoryOrderRow(o)).join('')}</tbody></table>`;
+}
+function getHistoryOrders(){
+  const raw=orderHistoryData||[];
+  if(!raw.length) return [];
+  if(raw[0] && Array.isArray(raw[0].items)) return raw;
+  const orders=[];
+  raw.forEach((r,idx)=>{
+    const hasHead=!!(r.time||r.customerId||r.customerName||r.grandTotal);
+    let current=hasHead?null:orders[orders.length-1];
+    if(!current){
+      current={
+        orderId:r.orderId||buildHistoryOrderId(r,idx),
+        time:r.time||'', customerId:r.customerId||'', customerName:r.customerName||'',
+        chokuId:r.chokuId||'', chokuName:r.chokuName||'', staff:r.staff||'',
+        shippingFee:r.shippingFee||'', codFee:r.codFee||'', discount:r.discount||'',
+        tax:r.tax||'', grandTotal:r.grandTotal||r.lineTotal||'', deliveryTime:r.deliveryTime||'',
+        note:r.note||'', items:[]
+      };
+      orders.push(current);
+    }
+    if(r.sku||r.productName||r.qty){
+      current.items.push({
+        sku:r.sku||'', productName:r.productName||'', productNameJP:r.productNameJP||'',
+        qty:r.qty||'', price:r.price||'', lineTotal:r.lineTotal||''
+      });
+    }
+  });
+  return orders;
+}
+function buildHistoryOrderId(o,idx){
+  const compact=String(o.time||'').replace(/\D/g,'').slice(0,12);
+  return `KOME-${compact||String(idx+1).padStart(4,'0')}-${o.customerId||'NA'}`;
+}
+function renderHistoryOrderRow(o){
+  const id=o.orderId||buildHistoryOrderId(o,0);
+  const active=expandedHistoryOrderId===id;
+  return `<tr class="history-row ${active?'active':''}" onclick="toggleHistoryDetail('${jsString(id)}')">
+    <td class="history-order-id">${escapeHtml(id)}</td>
     <td class="history-time">${escapeHtml(o.time||'')}</td>
     <td>${escapeHtml(o.customerId||'')}</td>
     <td>${escapeHtml(o.customerName||'')}</td>
-    <td>${escapeHtml(o.sku||'')}</td>
-    <td>${escapeHtml(o.productName||'')}<br><small>${escapeHtml(o.productNameJP||'')}</small></td>
-    <td>${escapeHtml(o.qty||'')}</td>
-    <td class="history-total">${escapeHtml(o.grandTotal||o.lineTotal||'')}</td>
-    <td>${escapeHtml(o.note||'')}</td>
-  </tr>`).join('')}</tbody></table>`;
+    <td class="history-total">${escapeHtml(o.grandTotal||'')}</td>
+  </tr>${active?`<tr><td class="history-detail-cell" colspan="5">${renderHistoryDetail(o)}</td></tr>`:''}`;
+}
+function toggleHistoryDetail(id){
+  expandedHistoryOrderId=expandedHistoryOrderId===id?'':id;
+  renderOrderHistory();
+}
+function renderHistoryDetail(o){
+  const items=o.items||[];
+  const itemRows=items.length?items.map(i=>`<tr>
+    <td>${escapeHtml(i.sku||'')}</td>
+    <td>${escapeHtml(i.productName||'')}<br><small>${escapeHtml(i.productNameJP||'')}</small></td>
+    <td>${escapeHtml(i.qty||'')}</td>
+    <td>${escapeHtml(i.price||'')}</td>
+    <td>${escapeHtml(i.lineTotal||'')}</td>
+  </tr>`).join(''):'<tr><td colspan="5">Không có chi tiết sản phẩm</td></tr>';
+  return `<div class="history-detail">
+    <div class="history-detail-grid">
+      <div><b>担当者</b>${escapeHtml(o.staff||'')}</div>
+      <div><b>直送先</b>${escapeHtml(o.chokuName||o.chokuId||'')}</div>
+      <div><b>時間帯</b>${escapeHtml(o.deliveryTime||'')}</div>
+      <div><b>備考</b>${escapeHtml(o.note||'')}</div>
+      <div><b>送料</b>${escapeHtml(o.shippingFee||'')}</div>
+      <div><b>代引き</b>${escapeHtml(o.codFee||'')}</div>
+      <div><b>割引</b>${escapeHtml(o.discount||'')}</div>
+      <div><b>消費税</b>${escapeHtml(o.tax||'')}</div>
+    </div>
+    <table class="history-items"><thead><tr><th style="width:110px;">Mã hàng</th><th>Sản phẩm</th><th style="width:60px;">SL</th><th style="width:90px;">Đơn giá</th><th style="width:100px;">Thành tiền</th></tr></thead><tbody>${itemRows}</tbody></table>
+  </div>`;
 }
 function escapeHtml(v){
   return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function jsString(v){
+  return String(v??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r/g,'').replace(/\n/g,'\\n');
 }
 function applyData(d){
   customerData=d.customers||{};
