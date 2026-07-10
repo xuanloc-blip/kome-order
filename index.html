@@ -110,7 +110,8 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .pc-price-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: auto; padding-top: 3px; flex-wrap: wrap; }
 .pc-price-main { font-size: 14px; font-weight: 900; color: var(--gray1); white-space: nowrap; }
 .pc-price-main.on-sale { color: var(--red); }
-.pc-price-case { font-size: 10px; font-weight: 700; color: var(--red); }
+.pc-price-case { font-size: 10px; font-weight: 700; color: var(--gray2); }
+.pc-price-case.on-sale { color: var(--red); }
 .pc-orig { font-size: 10px; color: var(--gray3); text-decoration: line-through; font-weight: 500; }
 @media (max-width: 1500px) { #product-grid { grid-template-columns: repeat(4, 1fr); } }
 @media (max-width: 1200px) { #product-grid { grid-template-columns: repeat(3, 1fr); } }
@@ -570,8 +571,9 @@ function renderProducts(){
     // Hiển thị: giá lẻ to (giá thùng trong ngoặc); không có giá lẻ thì hiện giá thùng
     const showRetail=(onSale?rts:rt)>0;
     const priceCls = onSale ? 'pc-price-main on-sale' : 'pc-price-main';
+    const caseCls  = onSale ? 'pc-price-case on-sale' : 'pc-price-case';
     let unitHtml=showRetail
-      ? `<span class="${priceCls}">¥${(onSale?rts:rt).toLocaleString('ja-JP')}</span> <span class="pc-price-case">(¥${fp.toLocaleString('ja-JP')})</span>`
+      ? `<span class="${priceCls}">¥${(onSale?rts:rt).toLocaleString('ja-JP')}</span> <span class="${caseCls}">(¥${fp.toLocaleString('ja-JP')})</span>`
       : `<span class="${priceCls}">¥${fp.toLocaleString('ja-JP')}</span>`;
     let origHtml='';
     if(onSale){
