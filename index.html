@@ -461,14 +461,55 @@ async function loadData(force=false){
   }catch(e){ setStatus('err',e.message); }
   showLoading(false);
 }
-function fetchJSONP(url){
-  return new Promise((res,rej)=>{
-    const cb='kome_cb_'+Date.now(), s=document.createElement('script');
-    const t=setTimeout(()=>{cl();rej(new Error('Timeout'));},15000);
-    window[cb]=d=>{cl();res(d);};
-    function cl(){clearTimeout(t);delete window[cb];s.parentNode&&s.parentNode.removeChild(s);}
-    s.onerror=()=>{cl();rej(new Error('Script error'));};
-    s.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
+function buildUrl(base, params) {
+  const sep = base.includes('?') ? '&' : '?';
+
+  const qs = Object.entries(params)
+    .map(([k, v]) =>
+      encodeURIComponent(k) + '=' + encodeURIComponent(v)
+    )
+    .join('&');
+
+  return base + sep + qs;
+}
+
+function fetchJSONP(url) {
+  return new Promise((res, rej) => {
+    const cb = 'kome_cb_' + Date.now();
+    const s = document.createElement('script');
+
+    const t = setTimeout(() => {
+      cleanUp();
+      rej(new Error('Timeout'));
+    }, 15000);
+
+    window[cb] = data => {
+      cleanUp();
+      res(data);
+    };
+
+    function cleanUp() {
+      clearTimeout(t);
+      delete window[cb];
+
+      if (s.parentNode) {
+        s.parentNode.removeChild(s);
+      }
+    }
+
+    s.onerror = () => {
+      cleanUp();
+      rej(new Error('Script error'));
+    };
+
+    const sep = url.includes('?') ? '&' : '?';
+
+    s.src =
+      url +
+      sep +
+      'callback=' +
+      encodeURIComponent(cb);
+
     document.head.appendChild(s);
   });
 }
@@ -947,7 +988,7 @@ async function loadOrderList(){
   body.innerHTML='<div class="oh-empty">Đang tải...</div>';
   if(!sheetUrl){ body.innerHTML='<div class="oh-empty">Chưa cấu hình URL Apps Script</div>'; return; }
   try{
-    const j=await fetchJSONP(sheetUrl+'&action=orders');
+    const j=await fetchJSONP(buildUrl(sheetUrl,{action:'orders'}));
     if(j.status!=='success'){ body.innerHTML='<div class="oh-empty">Lỗi: '+(j.message||'')+'</div>'; return; }
     ohOrderList=j.data||[];
     renderOrderList();
@@ -973,7 +1014,7 @@ async function viewOrderDetail(code){
   listV.classList.add('hidden'); detV.classList.remove('hidden');
   detV.innerHTML='<div class="oh-empty">Đang tải...</div>';
   try{
-    const j=await fetchJSONP(sheetUrl+'&action=orderDetail&code='+encodeURIComponent(code));
+    const j=await fetchJSONP(buildUrl(sheetUrl,{action:'orderDetail',code:code}));
     if(j.status!=='success'||!j.data){ detV.innerHTML='<div class="oh-empty">Không tìm thấy đơn hàng</div>'; return; }
     renderOrderDetail(j.data);
   }catch(e){ detV.innerHTML='<div class="oh-empty">Lỗi: '+e.message+'</div>'; }
