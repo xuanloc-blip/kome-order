@@ -542,7 +542,7 @@ function renderHistoryOrderRow(o){
   const id=o.orderId||buildHistoryOrderId(o,0);
   const active=expandedHistoryOrderId===id;
   return `<tr class="history-row ${active?'active':''}" onclick="toggleHistoryDetail('${jsString(id)}')">
-    <td class="history-order-id">${escapeHtml(id)}</td>
+    <td class="history-order-id">${escapeHtml(id)}${(o.status||'').includes('キャンセル')?' <span style="color:var(--red);font-size:10px;">(ĐÃ HỦY)</span>':''}</td>
     <td class="history-time">${escapeHtml(o.time||'')}</td>
     <td>${escapeHtml(o.customerId||'')}</td>
     <td>${escapeHtml(o.customerName||'')}</td>
@@ -574,8 +574,78 @@ function renderHistoryDetail(o){
       <div><b>消費税</b>${escapeHtml(o.tax||'')}</div>
     </div>
     <table class="history-items"><thead><tr><th style="width:110px;">Mã hàng</th><th>Sản phẩm</th><th style="width:60px;">SL</th><th style="width:90px;">Đơn giá</th><th style="width:100px;">Thành tiền</th></tr></thead><tbody>${itemRows}</tbody></table>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="btn-primary" style="flex:0 0 auto;" onclick="event.stopPropagation();reprintHistoryOrder('${jsString(o.orderId)}')">🖨 In lại</button>
+      <button class="btn-ghost" onclick="event.stopPropagation();editHistoryOrder('${jsString(o.orderId)}')">✏️ Chỉnh sửa</button>
+      <button class="btn-ghost" style="color:var(--red);" onclick="event.stopPropagation();cancelHistoryOrder('${jsString(o.orderId)}')">🗑 Hủy đơn</button>
+    </div>
   </div>`;
 }
+function findHistoryOrder(id){ return getHistoryOrders().find(o=>String(o.orderId||'')===String(id)); }
+
+function cancelHistoryOrder(id){
+  if(!confirm('Bạn chắc chắn muốn HỦY đơn '+id+'?')) return;
+  fetch(sheetUrl,{method:'POST',body:JSON.stringify({action:'cancelOrder',data:{orderId:id}})})
+    .then(r=>r.text())
+    .then(txt=>{
+      console.log('[cancelOrder]',txt);
+      let j=null; try{ j=JSON.parse(txt); }catch(e){}
+      if(j&&j.status==='error'){ alert('Hủy thất bại: '+j.message); return; }
+      loadOrderHistory(true);
+    })
+    .catch(err=>alert('Hủy thất bại: '+err.message));
+}
+
+function editHistoryOrder(id){
+  const o=findHistoryOrder(id); if(!o) return;
+  const entry=Object.entries(customerData).find(([,c])=>String(c.id).trim()===String(o.customerId).trim());
+  if(!entry){ alert('Không tìm thấy khách hàng mã '+o.customerId+' trong dữ liệu hiện tại'); return; }
+  newTab(); const t=getTab();
+  t.customer={...entry[1],urlKey:entry[0]};
+  (o.items||[]).forEach(i=>{
+    const p=productData.find(x=>x.sku===i.sku);
+    const price=parseFloat(String(i.price||'').replace(/,/g,''))||0;
+    const isXot=p?(p.category||'').toLowerCase().includes('xốt'):false;
+    t.cart.push({sku:i.sku,name:i.productName||(p?p.name:''),nameJP:i.productNameJP||(p?p.nameJP:''),
+      price:price,originalPrice:price,qty:parseFloat(i.qty)||1,isXot:isXot,
+      shippingType:p?getShipType(p.category||''):'dry',discount:0});
+  });
+  setActiveTab(t.id); closeOrderHistory();
+  alert('Đã nạp đơn '+id+' vào tab mới.\nSửa xong bấm In để lưu thành ĐƠN MỚI, sau đó vào lịch sử HỦY đơn cũ '+id+' để tránh trùng.');
+}
+
+function reprintHistoryOrder(id){
+  const o=findHistoryOrder(id); if(!o) return;
+  const rows=(o.items||[]).map((i,n)=>`<tr><td style="text-align:center;">${n+1}</td><td>${escapeHtml(i.sku)}</td><td>${escapeHtml(i.productName)}<br><small>${escapeHtml(i.productNameJP)}</small></td><td style="text-align:right;">${escapeHtml(i.qty)}</td><td style="text-align:right;">¥${escapeHtml(i.price)}</td><td style="text-align:right;">¥${escapeHtml(i.lineTotal)}</td></tr>`).join('');
+  const html=`<html><head><meta charset="UTF-8"><title>注文書 ${escapeHtml(id)}</title><style>
+body{font-family:system-ui,"Meiryo",sans-serif;font-size:9pt;margin:16px;}
+h1{font-size:13pt;text-align:center;}
+table{width:100%;border-collapse:collapse;margin-top:8px;}
+th,td{border:1px solid #ccc;padding:4px 6px;}
+th{background:#444;color:#fff;-webkit-print-color-adjust:exact;}
+.meta td{border:1px solid #ddd;}
+.tot{text-align:right;font-weight:bold;}
+@media print{.np{display:none}}
+</style></head><body>
+<button class="np" onclick="window.print()" style="padding:8px 16px;cursor:pointer;">🖨 In</button>
+<h1>注 文 請 書（再印刷）</h1>
+<table class="meta">
+<tr><td>注文番号</td><td><b>${escapeHtml(id)}</b></td><td>日時</td><td>${escapeHtml(o.time||'')}</td></tr>
+<tr><td>得意先</td><td>${escapeHtml(o.customerId||'')} ${escapeHtml(o.customerName||'')}</td><td>担当者</td><td>${escapeHtml(o.staff||'')}</td></tr>
+${o.chokuName?`<tr><td>直送先</td><td colspan="3">${escapeHtml(o.chokuId||'')} ${escapeHtml(o.chokuName||'')}</td></tr>`:''}
+</table>
+<table><thead><tr><th>行</th><th>コード</th><th>商品名</th><th>数量</th><th>単価</th><th>金額</th></tr></thead><tbody>${rows}</tbody></table>
+<table class="meta">
+<tr><td class="tot">送料</td><td style="text-align:right;">¥${escapeHtml(o.shippingFee||'0')}</td></tr>
+${o.codFee&&o.codFee!=='0'?`<tr><td class="tot">代引き手数料</td><td style="text-align:right;">¥${escapeHtml(o.codFee)}</td></tr>`:''}
+${o.discount&&o.discount!=='0'?`<tr><td class="tot">割引</td><td style="text-align:right;">-¥${escapeHtml(o.discount)}</td></tr>`:''}
+<tr><td class="tot">合計 (税込 ¥${escapeHtml(o.tax||'0')})</td><td style="text-align:right;font-size:12pt;"><b>¥${escapeHtml(o.grandTotal||'')}</b></td></tr>
+</table>
+</body></html>`;
+  const w=window.open('','_blank');
+  w.document.write(html); w.document.close(); w.focus();
+  setTimeout(()=>w.print(),400);
+}  
 function escapeHtml(v){
   return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
