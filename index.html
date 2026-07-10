@@ -210,6 +210,37 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 ::-webkit-scrollbar-thumb { background: #d9cba8; border-radius: 3px; }
 
 @media (max-width: 1280px) { #main { grid-template-columns: 1fr 390px; } }
+#order-history-modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 1500; }
+#order-history-modal.hidden { display: none; }
+.oh-panel { background: #fff; border-radius: 12px; width: 92vw; max-width: 1100px; height: 86vh; display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,.3); overflow: hidden; }
+.oh-header { display: flex; align-items: center; padding: 14px 18px; background: var(--red); color: #fff; flex-shrink: 0; }
+.oh-header h2 { font-size: 15px; font-weight: 800; flex: 1; }
+.oh-close { background: rgba(255,255,255,.2); border: none; color: #fff; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.oh-close:hover { background: rgba(255,255,255,.35); }
+#oh-list-view { flex: 1; min-height: 0; overflow-y: auto; padding: 0; }
+.oh-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.oh-table thead th { position: sticky; top: 0; background: var(--yellow-light); border-bottom: 2px solid var(--yellow); padding: 10px 12px; text-align: left; font-weight: 800; color: var(--gray2); z-index: 1; }
+.oh-table tbody tr { cursor: pointer; border-bottom: 1px solid var(--gray5); transition: background .1s ease; }
+.oh-table tbody tr:hover { background: var(--yellow-light); }
+.oh-table tbody tr.cancelled { opacity: .5; }
+.oh-table td { padding: 9px 12px; }
+.oh-code { font-weight: 800; color: var(--red-dark); }
+.oh-total { font-weight: 900; text-align: right; }
+.oh-status-badge { display: inline-block; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px; background: var(--red-light); color: var(--red); }
+.oh-empty { text-align: center; color: var(--gray3); padding: 60px 20px; }
+#oh-detail-view { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 18px; }
+#oh-detail-view.hidden { display: none; }
+.oh-back { background: var(--gray5); border: none; border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; margin-bottom: 12px; display: inline-flex; align-items: center; gap: 5px; }
+.oh-back:hover { background: var(--gray4); }
+.oh-detail-table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+.oh-detail-table th { background: var(--gray1); color: #fff; padding: 8px; text-align: left; }
+.oh-detail-table td { padding: 7px 8px; border-bottom: 1px solid var(--gray5); }
+.oh-detail-actions { display: flex; gap: 8px; margin-top: 16px; }
+.oh-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.oh-btn-print { background: var(--red); color: #fff; }
+.oh-btn-edit { background: var(--yellow); color: var(--red-dark); }
+.oh-btn-cancel { background: var(--white); color: var(--red); border: 2px solid var(--red-light); }
+.oh-btn:hover { filter: brightness(1.08); }
 </style>
 </head>
 <body>
@@ -255,7 +286,8 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
       <span id="staff-chip-name">Chưa chọn</span>
     </div>
     <span id="connection-status">●</span>
-    <button class="tb-btn" onclick="reloadData()" title="Tải lại dữ liệu">🔄</button>
+   <button class="tb-btn" onclick="openOrderHistory()" title="Lịch sử đơn hàng" aria-label="Lịch sử đơn hàng"><i class="ti ti-history" aria-hidden="true"></i></button>
+    <button class="tb-btn" onclick="reloadData()" title="Tải lại dữ liệu" aria-label="Tải lại dữ liệu"><i class="ti ti-refresh" aria-hidden="true"></i></button>
     <button class="tb-btn" onclick="openSettings()" title="Cài đặt">⚙️</button>
   </div>
 </div>
@@ -306,7 +338,17 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
     </div>
   </div>
 </div>
-
+<div id="order-history-modal" class="hidden">
+  <div class="oh-panel">
+    <div class="oh-header">
+      <h2><i class="ti ti-history" style="vertical-align:-2px;margin-right:6px;"></i>Lịch sử đơn hàng</h2>
+      <button class="oh-close" onclick="closeOrderHistory()" aria-label="Đóng"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="oh-list-view"></div>
+    <div id="oh-detail-view" class="hidden"></div>
+  </div>
+</div>
+  
 <script>
 // ============ CONFIG ============
 const SHEET_URL_KEY='kome_sheet_url', CACHE_KEY='kome_data_cache', STAFF_KEY='kome_staff';
@@ -891,6 +933,141 @@ window.addEventListener('DOMContentLoaded',()=>{
   newTab();
   if(sheetUrl) loadData(); else openSettings();
 });
+// ============ ORDER HISTORY ============
+let ohOrderList = [];
+function openOrderHistory(){
+  document.getElementById('order-history-modal').classList.remove('hidden');
+  document.getElementById('oh-detail-view').classList.add('hidden');
+  document.getElementById('oh-list-view').classList.remove('hidden');
+  loadOrderList();
+}
+function closeOrderHistory(){ document.getElementById('order-history-modal').classList.add('hidden'); }
+async function loadOrderList(){
+  const body=document.getElementById('oh-list-view');
+  body.innerHTML='<div class="oh-empty">Đang tải...</div>';
+  if(!sheetUrl){ body.innerHTML='<div class="oh-empty">Chưa cấu hình URL Apps Script</div>'; return; }
+  try{
+    const j=await fetchJSONP(sheetUrl+'&action=orders');
+    if(j.status!=='success'){ body.innerHTML='<div class="oh-empty">Lỗi: '+(j.message||'')+'</div>'; return; }
+    ohOrderList=j.data||[];
+    renderOrderList();
+  }catch(e){ body.innerHTML='<div class="oh-empty">Lỗi tải dữ liệu: '+e.message+'</div>'; }
+}
+function renderOrderList(){
+  const body=document.getElementById('oh-list-view');
+  if(!ohOrderList.length){ body.innerHTML='<div class="oh-empty">Chưa có đơn hàng nào</div>'; return; }
+  body.innerHTML=`<table class="oh-table"><thead><tr>
+    <th>Mã đơn</th><th>Thời gian</th><th>Mã KH</th><th>Khách hàng</th><th style="text-align:right;">Tổng tiền</th><th></th>
+  </tr></thead><tbody>${ohOrderList.map(o=>`
+    <tr class="${o.status==='キャンセル'?'cancelled':''}" onclick="viewOrderDetail('${o.code}')">
+      <td class="oh-code">${o.code}</td>
+      <td>${o.date} ${o.time}</td>
+      <td>${o.customerId}</td>
+      <td>${o.customerName}</td>
+      <td class="oh-total">¥${(o.grandTotal||0).toLocaleString('ja-JP')}</td>
+      <td>${o.status==='キャンセル'?'<span class="oh-status-badge">Đã hủy</span>':''}</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+async function viewOrderDetail(code){
+  const listV=document.getElementById('oh-list-view'), detV=document.getElementById('oh-detail-view');
+  listV.classList.add('hidden'); detV.classList.remove('hidden');
+  detV.innerHTML='<div class="oh-empty">Đang tải...</div>';
+  try{
+    const j=await fetchJSONP(sheetUrl+'&action=orderDetail&code='+encodeURIComponent(code));
+    if(j.status!=='success'||!j.data){ detV.innerHTML='<div class="oh-empty">Không tìm thấy đơn hàng</div>'; return; }
+    renderOrderDetail(j.data);
+  }catch(e){ detV.innerHTML='<div class="oh-empty">Lỗi: '+e.message+'</div>'; }
+}
+function renderOrderDetail(d){
+  const detV=document.getElementById('oh-detail-view');
+  const rows=d.items.map(it=>`<tr><td>${it.sku}</td><td>${it.name}<br><small style="color:var(--gray3);">${it.nameJP||''}</small></td><td style="text-align:right;">${it.qty}</td><td style="text-align:right;">¥${it.price.toLocaleString('ja-JP')}</td><td style="text-align:right;font-weight:700;">¥${it.total.toLocaleString('ja-JP')}</td></tr>`).join('');
+  const cancelled=d.status==='キャンセル';
+  detV.innerHTML=`
+    <button class="oh-back" onclick="backToOrderList()"><i class="ti ti-arrow-left"></i>Quay lại danh sách</button>
+    ${cancelled?'<div style="background:var(--red-light);color:var(--red);padding:8px 12px;border-radius:8px;font-size:12px;font-weight:700;margin-bottom:10px;">Đơn hàng này đã bị hủy</div>':''}
+    <div class="info-card">
+      <h4>Thông tin đơn hàng</h4>
+      <div class="ir"><label>Mã đơn</label><span style="color:var(--red);font-weight:800;">${d.code}</span></div>
+      <div class="ir"><label>Thời gian</label><span>${d.date} ${d.time}</span></div>
+      <div class="ir"><label>Mã KH</label><span>${d.customerId}</span></div>
+      <div class="ir"><label>Khách hàng</label><span>${d.customerName}</span></div>
+      <div class="ir"><label>Địa chỉ</label><span>${d.address||'―'}</span></div>
+      <div class="ir"><label>Phụ trách</label><span>${d.staff||'―'}</span></div>
+      ${d.note?`<div class="ir"><label>Ghi chú</label><span>${d.note}</span></div>`:''}
+    </div>
+    <table class="oh-detail-table"><thead><tr><th>Mã SP</th><th>Tên sản phẩm</th><th style="text-align:right;">SL</th><th style="text-align:right;">Đơn giá</th><th style="text-align:right;">Thành tiền</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="sum-row"><span class="sum-label">送料</span><span>¥${d.shippingFee.toLocaleString('ja-JP')}</span></div>
+    ${d.codFee?`<div class="sum-row"><span class="sum-label">代引き手数料</span><span>¥${d.codFee.toLocaleString('ja-JP')}</span></div>`:''}
+    ${d.discount?`<div class="sum-row disc"><span>割引</span><span>-¥${d.discount.toLocaleString('ja-JP')}</span></div>`:''}
+    <div class="sum-row"><span class="sum-label">消費税</span><span>¥${d.tax.toLocaleString('ja-JP')}</span></div>
+    <div class="sum-row total"><span>合計</span><span>¥${d.grandTotal.toLocaleString('ja-JP')}</span></div>
+    <div class="oh-detail-actions">
+      <button class="oh-btn oh-btn-print" onclick="reprintOrder('${d.code}')"><i class="ti ti-printer"></i>In lại</button>
+      <button class="oh-btn oh-btn-edit" onclick="editOrder('${d.code}')" ${cancelled?'disabled':''}><i class="ti ti-edit"></i>Chỉnh sửa</button>
+      <button class="oh-btn oh-btn-cancel" onclick="cancelOrderConfirm('${d.code}')" ${cancelled?'disabled':''}><i class="ti ti-ban"></i>Hủy đơn</button>
+    </div>`;
+  detV.dataset.orderData=JSON.stringify(d);
+}
+function backToOrderList(){
+  document.getElementById('oh-detail-view').classList.add('hidden');
+  document.getElementById('oh-list-view').classList.remove('hidden');
+  loadOrderList();
+}
+function reprintOrder(code){
+  const d=JSON.parse(document.getElementById('oh-detail-view').dataset.orderData);
+  const rows=d.items.map((it,i)=>`<tr><td style="text-align:center;color:#666;">${i+1}</td><td>${it.sku}</td><td>${it.name}<br><small>${it.nameJP||''}</small></td><td style="text-align:right;">${it.qty}</td><td style="text-align:right;">¥${it.price.toLocaleString('ja-JP')}</td><td style="text-align:right;">¥${it.total.toLocaleString('ja-JP')}</td></tr>`).join('');
+  const html=`<html><head><title>注文書 - ${d.customerName}</title><meta charset="UTF-8"><style>
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;margin:0;font-size:8pt;color:#000;background:#f4f4f4}
+#inv{max-width:1000px;margin:0 auto;padding:10px 12px;background:#fff}
+h1{font-size:14pt;text-align:center;margin:2px 0 14px}
+table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:4px 5px;vertical-align:middle;line-height:1.3}
+th{background:#444;color:#fff;text-align:center;font-size:8pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+tbody tr:nth-child(even){background:#f9f9f9}
+.ht{table-layout:fixed;margin-bottom:14px}.ht .lb{background:#f9f9f9;text-align:center;font-weight:bold;width:15%;white-space:nowrap}.ht .vl{width:35%}
+.tv{text-align:right;font-size:12pt;font-weight:900}
+@media print{body{background:#fff}.np{display:none}}
+</style></head><body>
+<button class="np" onclick="window.print()" style="padding:10px 20px;font-size:16px;margin:10px;cursor:pointer;">🖨 In lại Hóa Đơn</button>
+<div id="inv"><h1>注 文 請 書 (IN LẠI — ${d.code})</h1>
+<table class="ht">
+<tr><td class="lb">得意先コード</td><td class="vl">${d.customerId}</td><td class="lb">日付</td><td class="vl">${d.date} ${d.time}</td></tr>
+<tr><td class="lb">会社名</td><td class="vl" colspan="3">${d.customerName}</td></tr>
+<tr><td class="lb">住所</td><td class="vl" colspan="3">${d.address||''}</td></tr>
+<tr><td class="lb">営業担当</td><td class="vl" colspan="3">${d.staff||''}</td></tr>
+</table>
+<table><thead><tr><th style="width:5%">行</th><th style="width:10%">コード</th><th style="width:43%">商品名</th><th style="width:13%">数量</th><th style="width:12%">単価</th><th style="width:17%">金額</th></tr></thead><tbody>${rows}</tbody></table>
+<table class="ht" style="margin-top:10px;">
+<tr><td class="lb">送料</td><td class="vl">¥${d.shippingFee.toLocaleString('ja-JP')}</td><td class="lb">消費税</td><td class="vl">¥${d.tax.toLocaleString('ja-JP')}</td></tr>
+<tr><td class="lb">合計</td><td class="tv" colspan="3">¥${d.grandTotal.toLocaleString('ja-JP')}</td></tr>
+</table>
+</div></body></html>`;
+  const w=window.open('','_blank'); w.document.write(html); w.document.close(); w.focus();
+  setTimeout(()=>w.print(),500);
+}
+function editOrder(code){
+  const d=JSON.parse(document.getElementById('oh-detail-view').dataset.orderData);
+  const custEntry=Object.entries(customerData).find(([,c])=>c.id===d.customerId);
+  const id=newTab(), t=getTab();
+  t.customer=custEntry?{...custEntry[1],urlKey:custEntry[0]}:{id:d.customerId,name:d.customerName,address:d.address,pic:d.staff};
+  t.cart=d.items.map(it=>{
+    const p=productData.find(x=>x.sku===it.sku);
+    const isXot=p?(p.category||'').toLowerCase().includes('xốt'):false;
+    return {sku:it.sku,name:it.name,nameJP:it.nameJP,price:it.price,originalPrice:p?parseFloat((p.price||'').replace(/,/g,''))||it.price:it.price,qty:it.qty,isXot,shippingType:p?getShipType(p.category||''):'dry',discount:it.discount||0};
+  });
+  t.discount=d.discount||0; t.note=d.note||'';
+  setActiveTab(id);
+  closeOrderHistory();
+  alert('Đã tải đơn hàng '+code+' vào tab mới để chỉnh sửa. Lưu ý: khi bấm "Tạo & In Đơn hàng", hệ thống sẽ tạo MỘT ĐƠN MỚI với mã riêng — đơn gốc '+code+' vẫn còn nguyên trong lịch sử, bạn nên vào lại lịch sử để hủy đơn gốc nếu không cần nữa.');
+}
+async function cancelOrderConfirm(code){
+  if(!confirm('Xác nhận hủy đơn hàng '+code+'? Hành động này không thể hoàn tác.')) return;
+  try{
+    const res=await fetch(sheetUrl,{method:'POST',body:JSON.stringify({action:'cancelOrder',code:code})});
+    const j=await res.json();
+    if(j.status==='ok'){ alert('Đã hủy đơn hàng thành công'); viewOrderDetail(code); }
+    else alert('Lỗi: '+(j.message||'Không xác định'));
+  }catch(e){ alert('Lỗi kết nối: '+e.message); }
+}  
 </script>
 </body>
 </html>
