@@ -95,7 +95,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .cat-btn { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--gray4); background: var(--white); font-size: 12px; cursor: pointer; white-space: nowrap; color: var(--gray2); flex-shrink: 0; }
 .cat-btn.active { background: var(--red); color: #fff; border-color: var(--red); font-weight: 700; }
 #product-grid { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; align-content: start; }
-.product-card { position: relative; border: 1px solid var(--gray4); border-radius: 12px; cursor: pointer; overflow: hidden; transition: all .15s; background: var(--white); display: flex; flex-direction: row; align-items: stretch; min-height: 110px; }
+.product-card { position: relative; border: 1px solid var(--gray4); border-radius: 12px; cursor: pointer; overflow: hidden; transition: all .15s; background: var(--white); display: flex; flex-direction: row; align-items: stretch; min-height: 124px; }
 .product-card:hover { border-color: var(--red); box-shadow: 0 4px 14px rgba(212,45,39,.22); transform: translateY(-2px); }
 .pc-img-wrap { width: 42%; min-width: 76px; max-width: 130px; flex-shrink: 0; background: #fff; display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--gray5); overflow: hidden; }
 .pc-img-wrap img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
@@ -103,7 +103,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .pc-off-badge { position: absolute; top: 6px; right: 6px; background: var(--red); color: #fff; font-size: 10px; font-weight: 800; border-radius: 20px; padding: 3px 9px; box-shadow: 0 2px 6px rgba(0,0,0,.25); z-index: 3; }
 .pc-body { padding: 7px 9px 8px; display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .pc-sku { font-size: 10px; color: var(--gray3); font-weight: 600; }
-.pc-name { font-size: 12px; font-weight: 700; line-height: 1.3; white-space: nowrap; overflow: hidden; -webkit-mask-image: linear-gradient(to right, #000 78%, transparent 100%); mask-image: linear-gradient(to right, #000 78%, transparent 100%); }
+.pc-name {font-size: 12px;font-weight: 700;line-height: 1.3; display: -webkit-box;-webkit-line-clamp: 2;-webkit-box-orient: vertical;overflow: hidden;word-break: break-word;min-height: 31px; /* giữ chỗ cho đủ 2 dòng, tránh card lệch cao thấp */}
 .pc-spec { font-size: 10px; color: var(--gray2); }
 .pc-exp { font-size: 10px; color: var(--gray2); }
 .pc-exp b { color: var(--gray1); }
