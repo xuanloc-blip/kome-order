@@ -535,7 +535,7 @@ function getHistoryOrders(){
   return orders;
 }
 function buildHistoryOrderId(o,idx){
-  const compact=String(o.time||'').replace(/\D/g,'').slice(0,12);
+  const compact=String(o.time||'').replace(/\D/g,'').slice(0,8);
   return `KOME-${compact||String(idx+1).padStart(4,'0')}-${o.customerId||'NA'}`;
 }
 function renderHistoryOrderRow(o){
