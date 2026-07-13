@@ -751,11 +751,22 @@ function setCat(cat){
   document.querySelectorAll('.cat-btn').forEach(b=>b.classList.toggle('active',b.dataset.cat===cat));
   filterProducts(document.getElementById('product-search-input').value);
 }
+function normVN(s){
+  return String(s||'')
+    .toLowerCase()
+    .normalize('NFD')                 // tách dấu ra khỏi chữ cái
+    .replace(/[\u0300-\u036f]/g,'')   // xóa toàn bộ dấu thanh/dấu mũ
+    .replace(/đ/g,'d')                // đ không thuộc nhóm trên nên xử lý riêng
+    .trim();
+}  
 function filterProducts(q){
   const sq=(q||'').toLowerCase().trim();
+  const sqn=normVN(sq);
   filteredProducts=productData.filter(p=>{
     const mc=currentCat==='all'||p.category===currentCat;
-    const mq=!sq||(p.sku||'').toLowerCase().includes(sq)||(p.name||'').toLowerCase().includes(sq)||(p.nameJP||'').toLowerCase().includes(sq);
+    if(!sq) return mc;
+    const hay=`${p.sku||''} ${p.name||''} ${p.nameJP||''}`.toLowerCase();
+    const mq=hay.includes(sq)||normVN(hay).includes(sqn);
     return mc&&mq;
   });
   currentPage=1; renderProducts();
