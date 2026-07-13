@@ -1040,8 +1040,14 @@ function renderCart(){
   const goods8=itemSum(t.cart.filter(i=>!TAX10.includes(i.sku)));
   const goods10=itemSum(t.cart.filter(i=>TAX10.includes(i.sku)));
   const shipAll=['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0);
-  const tax8=Math.floor(goods8*8/108);
-  const tax10=Math.floor((goods10+shipAll+cod)*10/110);
+  // Phân bổ chiết khấu tổng theo tỉ lệ doanh thu của từng thuế suất
+  const disc0=(typeof disc!=='undefined'?disc:(t.discount||0));
+  const base10=goods10+shipAll+cod;
+  const baseAll=goods8+base10;
+  const d10=baseAll>0?Math.round(disc0*base10/baseAll):0;
+  const d8=disc0-d10;
+  const tax8=Math.floor(Math.max(0,goods8-d8)*8/108);
+  const tax10=Math.floor(Math.max(0,base10-d10)*10/110);
   const tax=tax8+tax10;
   if(t.discount>0) sumHtml+=`<div class="sum-row disc"><span>割引 (Giảm giá)</span><span>-¥${t.discount.toLocaleString('ja-JP')}</span></div>`;
   sumHtml+=`<div class="sum-row"><span class="sum-label">消費税</span><span>¥${tax.toLocaleString('ja-JP')}</span></div>`;
@@ -1115,8 +1121,14 @@ function handlePrint(){
   const goods8=itemSum(t.cart.filter(i=>!TAX10.includes(i.sku)));
   const goods10=itemSum(t.cart.filter(i=>TAX10.includes(i.sku)));
   const shipAll=['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0);
-  const tax8=Math.floor(goods8*8/108);
-  const tax10=Math.floor((goods10+shipAll+cod)*10/110);
+  // Phân bổ chiết khấu tổng theo tỉ lệ doanh thu của từng thuế suất
+  const disc0=(typeof disc!=='undefined'?disc:(t.discount||0));
+  const base10=goods10+shipAll+cod;
+  const baseAll=goods8+base10;
+  const d10=baseAll>0?Math.round(disc0*base10/baseAll):0;
+  const d8=disc0-d10;
+  const tax8=Math.floor(Math.max(0,goods8-d8)*8/108);
+  const tax10=Math.floor(Math.max(0,base10-d10)*10/110);
   const tax=tax8+tax10, disc=t.discount||0;
   const fin=Math.max(0,grand+cod-disc);
   const discHtml=disc>0?`<tr><td class="tl">割引 (Giảm giá)</td><td></td><td class="tv" style="color:#D42D27;">-¥${disc.toLocaleString('ja-JP')}</td></tr>`:'';
