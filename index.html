@@ -969,6 +969,7 @@ function openPricePop(sku,ev){
   const t=getTab(); const it=t?.cart.find(x=>x.sku===sku); if(!it) return;
   pricePopEl=document.createElement('div');
   pricePopEl.id='price-pop';
+  pricePopEl.addEventListener('click',e=>e.stopPropagation());
   const draw=()=>{
     const isPct=it.discountType==='pct';
     pricePopEl.innerHTML=`
