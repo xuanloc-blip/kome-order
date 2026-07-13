@@ -986,7 +986,7 @@ function openPricePop(sku,ev){
     pricePopEl.querySelector('#pp-pct').onclick=()=>{it.discountType='pct';renderCart();draw();};
     pricePopEl.querySelector('#pp-final').onchange=e=>{
       const v=parseFloat(e.target.value)||0;
-      it.discountType='yen'; it.discount=Math.max(0,effPrice(it)v);
+     it.discountType='yen'; it.discount=Math.max(0,it.price-v);
       renderCart();draw();
     };
   };
@@ -1009,12 +1009,12 @@ function renderCart(){
     cartHtml+=`<span class="cart-group-lbl ${g.cls}">${g.label}</span>`;
     let sub=0,crates=0;
     items.forEach(it=>{
-      const ep=effPrice(it)effPrice(it);
+      const ep=effPrice(it);
       const tot=Math.round(it.isXot?ep*(it.qty/0.25):ep*it.qty);
       sub+=tot;crates+=it.qty;
       cartHtml+=`<div class="cart-row"><div class="cr-name"><strong>${it.name}</strong><small>${it.sku}</small></div>
         <div class="qty-ctrl"><button class="qty-btn" onclick="chgQty('${it.sku}',-1)">−</button><input type="number" class="qty-input" value="${it.qty}" min="${it.isXot?0.25:1}" step="${it.isXot?0.25:1}" onclick="this.select()" onkeydown="if(event.key==='Enter')this.blur()" onchange="setQty('${it.sku}',this.value)"><button class="qty-btn" onclick="chgQty('${it.sku}',1)">+</button></div>
-        <span class="cart-price${effPrice(it)>0?' discounted':''}" onclick="openPricePop('${it.sku}',event)" title="Bấm để chỉnh giá">¥${effPrice(it).toLocaleString('ja-JP')}</span>
+        <span class="cart-price${(it.discount||0)>0?' discounted':''}" onclick="openPricePop('${it.sku}',event)" title="Bấm để chỉnh giá">¥${effPrice(it).toLocaleString('ja-JP')}</span>
         <span class="cart-total">¥${tot.toLocaleString('ja-JP')}</span><span class="cart-del" onclick="delItem('${it.sku}')">×</span></div>`;
     });
     const defS=sub<20000?crates*500:0;
@@ -1088,7 +1088,7 @@ function handlePrint(){
     if(!items.length)return;
     let sub=0,cr=0,rn=0,rows='';
     items.forEach(it=>{
-      rn++;const ep=effPrice(it)effPrice(it);
+      rn++;const ep=effPrice(it);
       const tot=Math.round(it.isXot?ep*(it.qty/0.25):ep*it.qty);
       sub+=tot;cr+=it.qty;
       const dp=it.isXot?ep*4:ep, dop=it.isXot?it.originalPrice*4:it.originalPrice;
@@ -1165,7 +1165,7 @@ ${allHtml}
   if(sheetUrl){
     fetch(sheetUrl,{method:'POST',body:JSON.stringify({action:'saveOrder',data:{
       customerId:c.id,customerName:c.name,address:c.address||'',chokuId:dc,chokuName:dn,staff:salesRep,
-      items:t.cart.map(it=>{const ep=effPrice(it)effPrice(it);return{sku:it.sku,name:it.name,nameJP:it.nameJP,qty:it.qty,price:it.price,discount:it.price-effPrice(it),total:Math.round(it.isXot?ep*(it.qty/.25):ep*it.qty)};}),
+      items:t.cart.map(it=>{const ep=effPrice(it);return{sku:it.sku,name:it.name,nameJP:it.nameJP,qty:it.qty,price:it.price,discount:it.price-effPrice(it),total:Math.round(it.isXot?ep*(it.qty/.25):ep*it.qty)};}),
       shippingFee:['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0),
       codFee:cod,discount:disc,tax:tax,grandTotal:fin,deliveryTime:dt,deliveryDate:dDate,note:nt
     }})})
