@@ -114,8 +114,8 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .pc-price-main { font-size: 14px; font-weight: 900; color: var(--gray1); white-space: nowrap; }
 .pc-price-main.sale, .pc-price-case.sale { color: var(--red); }
 .pc-price-case { font-size: 10px; font-weight: 700; color: var(--gray2); }
-.pc-orig { font-size: 10px; color: var(--gray3); text-decoration: line-through; font-weight: 600; order: -1; }
-.pc-price-line { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+.pc-orig { font-size: 10px; color: var(--gray3); text-decoration: line-through; font-weight: 600; order: -1; flex-basis: 100%; }
+.pc-price-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 1px 6px; }
 .pc-stock, .pc-arrival { font-size: 10px; color: var(--gray2); }
 .pc-meta-line .pc-spec { display: block; }
 .pc-meta-line .pc-exp { display: block; margin-top: 1px; }
