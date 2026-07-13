@@ -107,6 +107,9 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .pc-spec { font-size: 10px; color: var(--gray2); }
 .pc-exp { font-size: 10px; color: var(--gray2); }
 .pc-exp b { color: var(--gray1); }
+.pc-exp.exp-warn { color: var(--red); font-weight: 800; animation: expBlink 1s ease-in-out infinite; }
+.pc-exp.exp-warn b { color: var(--red); }
+@keyframes expBlink { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
 .pc-price-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: auto; padding-top: 3px; flex-wrap: wrap; }
 .pc-price-main { font-size: 14px; font-weight: 900; color: var(--gray1); white-space: nowrap; }
 .pc-price-main.sale, .pc-price-case.sale { color: var(--red); }
@@ -781,6 +784,18 @@ function fmtDate(v){
   if(!isNaN(d)) return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
   return s;
 }
+function isExpiringSoon(v){
+  if(!v) return false;
+  const s=String(v).trim();
+  let d=null;
+  const m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if(m) d=new Date(parseInt(m[1]),parseInt(m[2])-1,parseInt(m[3]));
+  else { const t=new Date(s); if(!isNaN(t)) d=t; }
+  if(!d||isNaN(d)) return false;
+  const limit=new Date();
+  limit.setMonth(limit.getMonth()+6);   // mốc: hôm nay + 6 tháng
+  return d<limit;                        // hạn nằm trước mốc => sắp hết hạn
+}  
 function imgSrc(u){
   if(!u) return '';
   u=String(u).trim();
@@ -868,7 +883,7 @@ function renderProducts(){
         <div class="pc-sku">${p.sku}</div>
         <div class="pc-name">${productName}</div>
         ${packsize?`<div class="pc-spec">${packsize}</div>`:''}
-        ${exp?`<div class="pc-exp"><b>EXP:</b> ${fmtDate(exp)}</div>`:''}
+        ${exp?`<div class="pc-exp${isExpiringSoon(exp)?' exp-warn':''}"><b>EXP:</b> ${fmtDate(exp)}</div>`:''}
         <div class="pc-price-row">
           <div>${unitHtml}${origHtml}</div>
           ${onSale?`<span class="pc-off">-${off}%</span>`:''}
