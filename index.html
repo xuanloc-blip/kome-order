@@ -117,6 +117,9 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .pc-orig { font-size: 10px; color: var(--gray3); text-decoration: line-through; font-weight: 600; }
 .pc-price-line { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; row-gap: 0; }
 .pc-stock, .pc-arrival { font-size: 10px; color: var(--gray2); }
+.pc-meta-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pc-meta-line .pc-spec { white-space: nowrap; }
+.pc-meta-line .pc-exp { white-space: nowrap; }
 .pc-stock b { color: var(--gray1); }
 .pc-arrival { color: var(--blue); }
 .pc-arrival b { color: var(--blue); }
@@ -895,7 +898,7 @@ function renderProducts(){
     const stockNum=parseFloat(String(p.stock||0).replace(/,/g,''))||0;
     const arrivalAmount=String(fieldVal(p,'Amount')||'').trim();
     const arrivalDate=String(fieldVal(p,'Expected arrival date')||'').trim();
-    const hasArrival=arrivalDate!=='';
+    const hasArrival=arrivalDate!==''&&arrivalAmount!==''&&arrivalAmount!=='未注文'&&arrivalDate!=='未注文';
     const img=p.image?`<img src="${imgSrc(p.image)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=pc-placeholder>📦</div>'">`:`<div class="pc-placeholder">📦</div>`;
     return `<div class="product-card" onclick="addToCart('${p.sku}')">
       ${onSale?`<div class="sale-ribbon">SALE</div>`:''}
@@ -903,10 +906,12 @@ function renderProducts(){
       <div class="pc-body">
         <div class="pc-sku">${p.sku}</div>
         <div class="pc-name">${productName}</div>
-        ${packsize?`<div class="pc-spec">${packsize}</div>`:''}
-        ${exp?`<div class="pc-exp${isExpiringSoon(exp)?' exp-warn':''}"><b>EXP:</b> ${fmtDate(exp)}</div>`:''}
+        ${(packsize||exp)?`<div class="pc-meta-line">
+          ${packsize?`<span class="pc-spec">${packsize}</span>`:''}
+          ${exp?`<span class="pc-exp${isExpiringSoon(exp)?' exp-warn':''}"><b>EXP:</b> ${fmtDate(exp)}</span>`:''}
+        </div>`:''}
         <div class="pc-stock">Tồn kho: <b>${stockNum.toLocaleString('ja-JP')}</b></div>
-        ${hasArrival?`<div class="pc-arrival">Hàng về: <b>${arrivalAmount||'?'}</b> (${fmtDate(arrivalDate)})</div>`:''}
+        ${hasArrival?`<div class="pc-arrival">Hàng về: <b>${arrivalAmount}</b> (${fmtDate(arrivalDate)})</div>`:''}
         <div class="pc-price-row">
           <div class="pc-price-line">${unitHtml}${origHtml}</div>
           ${onSale?`<span class="pc-off">-${off}%</span>`:''}
