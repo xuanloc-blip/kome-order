@@ -95,7 +95,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .cat-btn { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--gray4); background: var(--white); font-size: 12px; cursor: pointer; white-space: nowrap; color: var(--gray2); flex-shrink: 0; }
 .cat-btn.active { background: var(--red); color: #fff; border-color: var(--red); font-weight: 700; }
 #product-grid { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; align-content: start; }
-.product-card { position: relative; border: 1px solid var(--gray4); border-radius: 12px; cursor: pointer; overflow: hidden; transition: all .15s; background: var(--white); display: flex; flex-direction: row; align-items: stretch; min-height: 160px; }
+.product-card { position: relative; border: 1px solid var(--gray4); border-radius: 12px; cursor: pointer; overflow: hidden; transition: all .15s; background: var(--white); display: flex; flex-direction: row; align-items: stretch; min-height: 150px; }
 .product-card:hover { border-color: var(--red); box-shadow: 0 4px 14px rgba(212,45,39,.22); transform: translateY(-2px); }
 .pc-img-wrap { width: 42%; min-width: 76px; max-width: 130px; flex-shrink: 0; background: #fff; display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--gray5); overflow: hidden; }
 .pc-img-wrap img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
@@ -111,7 +111,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .pc-exp.exp-warn b { color: var(--red); }
 @keyframes expBlink { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
 .pc-price-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: auto; padding-top: 3px; flex-wrap: wrap; }
-.pc-price-main { font-size: 14px; font-weight: 900; color: var(--gray1); white-space: nowrap; }
+.pc-price-main { font-size: 15px; font-weight: 900; color: var(--gray1); white-space: nowrap; }
 .pc-price-main.sale, .pc-price-case.sale { color: var(--red); }
 .pc-price-case { font-size: 10px; font-weight: 700; color: var(--gray2); }
 .pc-orig { font-size: 10px; color: var(--gray3); text-decoration: line-through; font-weight: 600; order: -1; flex-basis: 100%; }
