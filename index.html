@@ -232,6 +232,18 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .history-items td { border-bottom: 1px solid var(--gray5); padding: 6px; }
 .history-empty { padding: 28px; text-align: center; color: var(--gray3); }
 
+.cart-price { min-width: 62px; text-align: right; font-size: 12px; font-weight: 800; color: var(--gray1); border-bottom: 1px dashed var(--gray3); cursor: pointer; padding: 1px 2px; white-space: nowrap; }
+.cart-price.discounted { color: var(--red); }
+#price-pop { position: fixed; background: #fff; border: 1px solid var(--gray4); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 10px 12px; z-index: 1500; width: 216px; }
+#price-pop .pp-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+#price-pop .pp-row:last-child { margin-bottom: 0; }
+#price-pop label { font-size: 11px; color: var(--gray3); flex-shrink: 0; }
+#price-pop input { width: 86px; padding: 4px 6px; border: none; border-bottom: 1px solid var(--gray4); font-size: 13px; text-align: right; outline: none; font-weight: 700; }
+#price-pop input:focus { border-bottom-color: var(--blue); }
+#price-pop input[readonly] { color: var(--gray2); font-weight: 600; }
+.pp-tg { display: inline-flex; border: 1px solid var(--gray4); border-radius: 6px; overflow: hidden; }
+.pp-tg button { border: none; background: var(--gray5); color: var(--gray2); font-size: 11px; padding: 3px 8px; cursor: pointer; font-weight: 700; }
+.pp-tg button.active { background: var(--blue); color: #fff; }  
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-thumb { background: #d9cba8; border-radius: 3px; }
 
@@ -941,9 +953,50 @@ function addToCart(sku){
   const q=isXot?0.25:1;
   const ex=t.cart.find(x=>x.sku===sku);
   if(ex) ex.qty=Math.round((ex.qty+q)*100)/100;
-  else t.cart.push({sku:p.sku,name:p.name,nameJP:p.nameJP||'',price:fp,originalPrice:pr,qty:q,isXot,shippingType:getShipType(p.category||''),discount:0});
+  else t.cart.push({sku:p.sku,name:p.name,nameJP:p.nameJP||'',price:fp,originalPrice:pr,qty:q,isXot,shippingType:getShipType(p.category||''),discount:0,discountType:'yen'});
   renderCart(); renderTabs();
 }
+function effPrice(i){
+  const d=i.discount||0;
+  if(i.discountType==='pct') return Math.max(0,Math.round(i.price*(1-d/100)));
+  return Math.max(0,i.price-d);
+}
+let pricePopEl=null;
+function closePricePop(){ if(pricePopEl){pricePopEl.remove();pricePopEl=null;} }
+function openPricePop(sku,ev){
+  ev.stopPropagation();
+  closePricePop();
+  const t=getTab(); const it=t?.cart.find(x=>x.sku===sku); if(!it) return;
+  pricePopEl=document.createElement('div');
+  pricePopEl.id='price-pop';
+  const draw=()=>{
+    const isPct=it.discountType==='pct';
+    pricePopEl.innerHTML=`
+      <div class="pp-row"><label>Đơn giá</label><input readonly value="${it.price.toLocaleString('ja-JP')}"></div>
+      <div class="pp-row"><label>Giảm giá</label>
+        <input id="pp-disc" type="number" min="0" value="${it.discount||''}" placeholder="0">
+        <span class="pp-tg">
+          <button id="pp-yen" class="${isPct?'':'active'}">¥</button>
+          <button id="pp-pct" class="${isPct?'active':''}">%</button>
+        </span>
+      </div>
+      <div class="pp-row"><label>Giá bán</label><input id="pp-final" type="number" min="0" value="${effPrice(it)}"></div>`;
+    pricePopEl.querySelector('#pp-disc').onchange=e=>{it.discount=parseFloat(e.target.value)||0;renderCart();draw();};
+    pricePopEl.querySelector('#pp-yen').onclick=()=>{it.discountType='yen';renderCart();draw();};
+    pricePopEl.querySelector('#pp-pct').onclick=()=>{it.discountType='pct';renderCart();draw();};
+    pricePopEl.querySelector('#pp-final').onchange=e=>{
+      const v=parseFloat(e.target.value)||0;
+      it.discountType='yen'; it.discount=Math.max(0,effPrice(it)v);
+      renderCart();draw();
+    };
+  };
+  draw();
+  document.body.appendChild(pricePopEl);
+  const r=ev.target.getBoundingClientRect();
+  pricePopEl.style.top=Math.min(r.bottom+4,window.innerHeight-170)+'px';
+  pricePopEl.style.left=Math.max(8,r.right-216)+'px';
+}
+document.addEventListener('click',e=>{ if(pricePopEl&&!e.target.closest('#price-pop')) closePricePop(); });  
 function renderCart(){
   const t=getTab();
   const cartEl=document.getElementById('cart-items'), sumEl=document.getElementById('summary');
@@ -956,12 +1009,12 @@ function renderCart(){
     cartHtml+=`<span class="cart-group-lbl ${g.cls}">${g.label}</span>`;
     let sub=0,crates=0;
     items.forEach(it=>{
-      const ep=it.price-(it.discount||0);
+      const ep=effPrice(it)effPrice(it);
       const tot=Math.round(it.isXot?ep*(it.qty/0.25):ep*it.qty);
       sub+=tot;crates+=it.qty;
       cartHtml+=`<div class="cart-row"><div class="cr-name"><strong>${it.name}</strong><small>${it.sku}</small></div>
-        <input type="number" class="cart-disc" value="${it.discount||''}" placeholder="¥off" min="0" onchange="updDisc('${it.sku}',this.value)">
         <div class="qty-ctrl"><button class="qty-btn" onclick="chgQty('${it.sku}',-1)">−</button><input type="number" class="qty-input" value="${it.qty}" min="${it.isXot?0.25:1}" step="${it.isXot?0.25:1}" onclick="this.select()" onkeydown="if(event.key==='Enter')this.blur()" onchange="setQty('${it.sku}',this.value)"><button class="qty-btn" onclick="chgQty('${it.sku}',1)">+</button></div>
+        <span class="cart-price${effPrice(it)>0?' discounted':''}" onclick="openPricePop('${it.sku}',event)" title="Bấm để chỉnh giá">¥${effPrice(it).toLocaleString('ja-JP')}</span>
         <span class="cart-total">¥${tot.toLocaleString('ja-JP')}</span><span class="cart-del" onclick="delItem('${it.sku}')">×</span></div>`;
     });
     const defS=sub<20000?crates*500:0;
@@ -980,7 +1033,7 @@ function renderCart(){
   }
   t.discount=parseInt(document.getElementById('disc-input').value)||0;
   const fin=Math.max(0,subAll+cod-t.discount);
-  const itemSum=items=>items.reduce((s,i)=>s+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0);
+  const itemSum=items=>items.reduce((s,i)=>s+(i.isXot?(effPrice(i))*(i.qty/0.25):(effPrice(i))*i.qty),0);
   const cShip=(items,tp)=>{if(t.freeShip[tp]!==null)return t.freeShip[tp];const s=itemSum(items);return s<20000?items.reduce((a,i)=>a+i.qty,0)*500:0;};
   // Gom toàn đơn theo thuế suất, mỗi suất tính & làm tròn xuống 1 lần (インボイス方式)
   const goods8=itemSum(t.cart.filter(i=>!TAX10.includes(i.sku)));
@@ -994,7 +1047,6 @@ function renderCart(){
   sumHtml+=`<div class="sum-row total"><span>合計 (TỔNG)</span><span>¥${fin.toLocaleString('ja-JP')}</span></div>`;
   sumEl.innerHTML=sumHtml;
 }
-function updDisc(sku,v){const t=getTab();const i=t?.cart.find(x=>x.sku===sku);if(i)i.discount=parseFloat(v)||0;renderCart();}
 function chgQty(sku,d){const t=getTab();if(!t)return;const i=t.cart.find(x=>x.sku===sku);if(!i)return;const s=i.isXot?.25:1;i.qty=Math.round((i.qty+d*s)*100)/100;if(i.qty<=0)t.cart=t.cart.filter(x=>x.sku!==sku);renderCart();renderTabs();}
 function setQty(sku,v){const t=getTab(); if(!t) return;const i=t.cart.find(x=>x.sku===sku); if(!i) return;let val=parseFloat(v);if(isNaN(val)||val<=0){ t.cart=t.cart.filter(x=>x.sku!==sku); renderCart(); renderTabs(); return; }const step=i.isXot?0.25:1;val=Math.round(val/step)*step;val=Math.round(val*100)/100;if(val<step) val=step;i.qty=val;renderCart(); renderTabs();}
 function delItem(sku){const t=getTab();if(!t)return;t.cart=t.cart.filter(x=>x.sku!==sku);renderCart();renderTabs();}
@@ -1029,14 +1081,14 @@ function handlePrint(){
   if(t.choku){const s=t.choku;dc=s.code;dn=s.name;da=`〒${s.post} ${s.pref}${s.city}${s.add1} ${s.add2}`.trim();}
   else{const ty=document.getElementById('choku-input').value.trim();if(ty)dc=ty;}
   const groups=[{key:'dry',label:'常温品 (Hàng Khô)',cls:'group-dry'},{key:'cool',label:'冷蔵品 (Hàng Mát)',cls:'group-cool'},{key:'cold',label:'冷凍品 (Hàng Lạnh)',cls:'group-cold'}];
-  const cShip=(items,tp)=>{if(t.freeShip[tp]!==null)return t.freeShip[tp];const s=items.reduce((a,i)=>a+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0);return s<20000?items.reduce((a,i)=>a+i.qty,0)*500:0;};
+  const cShip=(items,tp)=>{if(t.freeShip[tp]!==null)return t.freeShip[tp];const s=items.reduce((a,i)=>a+(i.isXot?(effPrice(i))*(i.qty/0.25):(effPrice(i))*i.qty),0);return s<20000?items.reduce((a,i)=>a+i.qty,0)*500:0;};
   let allHtml='',grand=0,allCr=0;
   groups.forEach(g=>{
     const items=t.cart.filter(x=>x.shippingType===g.key);
     if(!items.length)return;
     let sub=0,cr=0,rn=0,rows='';
     items.forEach(it=>{
-      rn++;const ep=it.price-(it.discount||0);
+      rn++;const ep=effPrice(it)effPrice(it);
       const tot=Math.round(it.isXot?ep*(it.qty/0.25):ep*it.qty);
       sub+=tot;cr+=it.qty;
       const dp=it.isXot?ep*4:ep, dop=it.isXot?it.originalPrice*4:it.originalPrice;
@@ -1051,7 +1103,7 @@ function handlePrint(){
 <tr><td colspan="3" style="border:none;"></td><td colspan="2" class="sl">送料</td><td class="sv">¥${ship.toLocaleString('ja-JP')}</td></tr>
 <tr><td colspan="3" style="border:none;"></td><td colspan="2" class="sl total">小計 (${g.label})</td><td class="sv total">¥${gt.toLocaleString('ja-JP')}</td></tr></tbody></table>`;
   });
-  const itemSum=items=>items.reduce((s,i)=>s+(i.isXot?(i.price-(i.discount||0))*(i.qty/0.25):(i.price-(i.discount||0))*i.qty),0);
+  const itemSum=items=>items.reduce((s,i)=>s+(i.isXot?(effPrice(i))*(i.qty/0.25):(effPrice(i))*i.qty),0);
   let cod=0,codHtml='';
   if(t.customer?.seikyu==='代引請求'){
     const def=grand>=20000?300:330;
@@ -1113,7 +1165,7 @@ ${allHtml}
   if(sheetUrl){
     fetch(sheetUrl,{method:'POST',body:JSON.stringify({action:'saveOrder',data:{
       customerId:c.id,customerName:c.name,address:c.address||'',chokuId:dc,chokuName:dn,staff:salesRep,
-      items:t.cart.map(it=>{const ep=it.price-(it.discount||0);return{sku:it.sku,name:it.name,nameJP:it.nameJP,qty:it.qty,price:it.price,discount:it.discount||0,total:Math.round(it.isXot?ep*(it.qty/.25):ep*it.qty)};}),
+      items:t.cart.map(it=>{const ep=effPrice(it)effPrice(it);return{sku:it.sku,name:it.name,nameJP:it.nameJP,qty:it.qty,price:it.price,discount:it.price-effPrice(it),total:Math.round(it.isXot?ep*(it.qty/.25):ep*it.qty)};}),
       shippingFee:['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0),
       codFee:cod,discount:disc,tax:tax,grandTotal:fin,deliveryTime:dt,deliveryDate:dDate,note:nt
     }})})
