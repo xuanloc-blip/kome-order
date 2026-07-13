@@ -1056,7 +1056,7 @@ function renderCart(){
   const goods10=itemSum(t.cart.filter(i=>TAX10.includes(i.sku)));
   const shipAll=['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0);
   // Phân bổ chiết khấu tổng theo tỉ lệ doanh thu của từng thuế suất
-  const disc0=(typeof disc!=='undefined'?disc:(t.discount||0));
+  const disc0=t.discount||0;
   const base10=goods10+shipAll+cod;
   const baseAll=goods8+base10;
   const d10=baseAll>0?Math.round(disc0*base10/baseAll):0;
@@ -1137,7 +1137,7 @@ function handlePrint(){
   const goods10=itemSum(t.cart.filter(i=>TAX10.includes(i.sku)));
   const shipAll=['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0);
   // Phân bổ chiết khấu tổng theo tỉ lệ doanh thu của từng thuế suất
-  const disc0=(typeof disc!=='undefined'?disc:(t.discount||0));
+  const disc0=t.discount||0;
   const base10=goods10+shipAll+cod;
   const baseAll=goods8+base10;
   const d10=baseAll>0?Math.round(disc0*base10/baseAll):0;
