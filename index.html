@@ -114,7 +114,12 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .pc-price-main { font-size: 14px; font-weight: 900; color: var(--gray1); white-space: nowrap; }
 .pc-price-main.sale, .pc-price-case.sale { color: var(--red); }
 .pc-price-case { font-size: 10px; font-weight: 700; color: var(--gray2); }
-.pc-orig { font-size: 10px; color: var(--gray3); text-decoration: line-through; font-weight: 600; line-height: 1.2; }
+.pc-orig { font-size: 10px; color: var(--gray3); text-decoration: line-through; font-weight: 600; }
+.pc-price-line { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; row-gap: 0; }
+.pc-stock, .pc-arrival { font-size: 10px; color: var(--gray2); }
+.pc-stock b { color: var(--gray1); }
+.pc-arrival { color: var(--blue); }
+.pc-arrival b { color: var(--blue); }
 .pc-off { position: absolute; top: 4px; right: 10px; background: var(--red); color: #fff; font-size: 10px; font-weight: 800; border-radius: 20px; padding: 2px 7px; white-space: nowrap; z-index: 3; }
 @media (max-width: 1500px) { #product-grid { grid-template-columns: repeat(4, 1fr); } }
 @media (max-width: 1200px) { #product-grid { grid-template-columns: repeat(3, 1fr); } }
@@ -885,8 +890,12 @@ function renderProducts(){
     let origHtml='';
     if(onSale){
       const om=origRetailPrice>0?`¥${origRetailPrice.toLocaleString('ja-JP')} (¥${origCasePrice.toLocaleString('ja-JP')})`:`¥${origCasePrice.toLocaleString('ja-JP')}`;
-      origHtml=`<div class="pc-orig">${om}</div>`;
+      origHtml=`<span class="pc-orig">${om}</span>`;
     }
+    const stockNum=parseFloat(String(p.stock||0).replace(/,/g,''))||0;
+    const arrivalAmount=String(fieldVal(p,'Amount')||'').trim();
+    const arrivalDate=String(fieldVal(p,'Expected arrival date')||'').trim();
+    const hasArrival=arrivalDate!=='';
     const img=p.image?`<img src="${imgSrc(p.image)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=pc-placeholder>📦</div>'">`:`<div class="pc-placeholder">📦</div>`;
     return `<div class="product-card" onclick="addToCart('${p.sku}')">
       ${onSale?`<div class="sale-ribbon">SALE</div>`:''}
@@ -896,8 +905,10 @@ function renderProducts(){
         <div class="pc-name">${productName}</div>
         ${packsize?`<div class="pc-spec">${packsize}</div>`:''}
         ${exp?`<div class="pc-exp${isExpiringSoon(exp)?' exp-warn':''}"><b>EXP:</b> ${fmtDate(exp)}</div>`:''}
+        <div class="pc-stock">Tồn kho: <b>${stockNum.toLocaleString('ja-JP')}</b></div>
+        ${hasArrival?`<div class="pc-arrival">Hàng về: <b>${arrivalAmount||'?'}</b> (${fmtDate(arrivalDate)})</div>`:''}
         <div class="pc-price-row">
-          <div>${unitHtml}${origHtml}</div>
+          <div class="pc-price-line">${unitHtml}${origHtml}</div>
           ${onSale?`<span class="pc-off">-${off}%</span>`:''}
         </div>
       </div>
