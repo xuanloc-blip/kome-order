@@ -958,12 +958,21 @@ chokuInput.addEventListener('input',e=>renderChokuDd(e.target.value));
 document.addEventListener('click',e=>{ if(!e.target.closest('#choku-wrap')) chokuDd.classList.remove('show'); });
 function renderChokuDd(q){
   const t=getTab();
-  if(!t?.customer){ chokuDd.classList.remove('show'); return; }
-  const cc=String(t.customer.id).trim();
-  let items=chokuData.filter(x=>String(x.customerCode).trim()===cc);
-  if(q) items=items.filter(x=>`${x.name} ${x.code} ${x.pref}${x.city}${x.add1}`.toLowerCase().includes(q.toLowerCase()));
+  const cc=t?.customer?String(t.customer.id).trim():'';
+  const qq=(q||'').toLowerCase().trim();
+  let items;
+  if(qq){
+    // Có gõ từ khóa: tìm tự do trên TOÀN BỘ dữ liệu 直送先 theo mã, tên, địa chỉ — không cần 得意先
+    items=chokuData.filter(x=>`${x.name} ${x.code} ${x.customerCode} ${x.pref}${x.city}${x.add1}${x.add2}`.toLowerCase().includes(qq));
+  }else if(cc){
+    // Chưa gõ gì nhưng đã chọn khách: gợi ý nhanh các 直送先 thuộc khách đó
+    items=chokuData.filter(x=>String(x.customerCode).trim()===cc);
+  }else{
+    items=[];
+  }
+  items=items.slice(0,30);
   if(!items.length){ chokuDd.classList.remove('show'); return; }
-  chokuDd.innerHTML=items.map(x=>`<div class="choku-item" onclick="selectChoku('${x.code}')"><div class="ci-name">📍 ${x.name} <span style="color:var(--gray3);font-weight:400;">(${x.code})</span></div><div class="ci-addr">〒${x.post} ${x.pref}${x.city}${x.add1} ${x.add2}</div></div>`).join('');
+  chokuDd.innerHTML=items.map(x=>`<div class="choku-item" onclick="selectChoku('${x.code}')"><div class="ci-name">📍 ${x.name} <span style="color:var(--gray3);font-weight:400;">(${x.code})</span>${x.customerCode?` <span style="color:var(--gray3);font-weight:400;">得意先:${x.customerCode}</span>`:''}</div><div class="ci-addr">〒${x.post} ${x.pref}${x.city}${x.add1} ${x.add2}</div></div>`).join('');
   chokuDd.classList.add('show');
 }
 function selectChoku(code){
