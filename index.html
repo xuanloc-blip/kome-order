@@ -134,6 +134,9 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .of:last-child { margin-bottom: 0; }
 .of label { font-size: 11px; color: var(--gray3); white-space: nowrap; width: 56px; flex-shrink: 0; font-weight: 600; }
 .of-val { font-size: 13px; font-weight: 700; flex: 1; }
+.of-val-input { font-size: 13px; font-weight: 700; flex: 1; padding: 5px 8px; border: 1px solid var(--gray4); border-radius: 6px; outline: none; background: var(--white); }
+.of-val-input:focus { border-color: var(--red); }
+#hdr-id-input { color: var(--red); }
 .of input, .of select { padding: 5px 8px; border: 1px solid var(--gray4); border-radius: 6px; font-size: 12px; outline: none; background: var(--white); }
 .of input:focus, .of select:focus { border-color: var(--red); }
 #choku-wrap { position: relative; flex: 1; }
@@ -336,8 +339,8 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
   <!-- COL 2: ORDER -->
   <div id="col-order">
     <div id="order-header">
-      <div class="of"><label>Khách</label><span class="of-val" id="hdr-customer">― Chưa chọn</span><button id="btn-cust-info" onclick="toggleCustInfo()">👤 Thông tin & liên hệ</button></div>
-      <div class="of"><label>Mã KH</label><span class="of-val" id="hdr-id" style="color:var(--red)"></span></div>
+      <div class="of"><label>Khách</label><input id="hdr-customer-input" class="of-val-input" placeholder="― Chưa chọn (gõ tên nếu khách mới)" oninput="updateManualCustomer()"><button id="btn-cust-info" onclick="toggleCustInfo()">👤 Thông tin & liên hệ</button></div>
+      <div class="of"><label>Mã KH</label><input id="hdr-id-input" class="of-val-input" placeholder="Nhập mã KH mới nếu chưa có..." oninput="updateManualCustomer()"></div>
       <div class="of"><label>直送先</label>
         <div id="choku-wrap"><input id="choku-input" placeholder="Tìm địa chỉ giao hàng..."><div id="choku-dd"></div></div>
       </div>
@@ -719,8 +722,27 @@ function selectCustomer(urlKey){
 }
 function renderOrderHeader(){
   const t=getTab(), c=t?.customer;
-  document.getElementById('hdr-customer').textContent=c?c.name:'― Chưa chọn';
-  document.getElementById('hdr-id').textContent=c?c.id:'';
+  document.getElementById('hdr-customer-input').value=c?c.name:'';
+  document.getElementById('hdr-id-input').value=c?c.id:'';
+}
+function updateManualCustomer(){
+  const t=getTab(); if(!t) return;
+  const idVal=document.getElementById('hdr-id-input').value.trim();
+  const nameVal=document.getElementById('hdr-customer-input').value.trim();
+  if(!idVal && !nameVal){
+    if(t.customer && t.customer.manual) t.customer=null;
+  }else{
+    const prev=t.customer||{};
+    t.customer={
+      id:idVal, name:nameVal||'(Khách mới)',
+      address:prev.address||'', pic:prev.pic||'', seikyu:prev.seikyu||'',
+      rank:prev.rank||'', tags:prev.tags||'', notes:prev.notes||[],
+      urlKey:prev.urlKey||null, manual:true
+    };
+  }
+  renderTabs();
+  renderChatPanel();
+  renderChokuDd(document.getElementById('choku-input').value);
 }
 
 // ============ CHAT PANEL (DRAWER) ============
@@ -735,12 +757,13 @@ function renderChatPanel(){
   const t=getTab(), c=t?.customer;
   const body=document.getElementById('chat-body');
   if(!c){ body.innerHTML='<div class="chat-note">← Chọn khách hàng để xem thông tin và mở chat Messenger</div>'; return; }
-  const msgUrl='https://www.'+ (c.urlKey||'');
   const tags=(c.tags||'').split(',').map(x=>x.trim()).filter(Boolean);
   const notes=Array.isArray(c.notes)?c.notes.slice(0,5):[];
+  const hasMsg=!!c.urlKey;
+  const msgUrl=hasMsg?('https://www.'+c.urlKey):'';
   body.innerHTML=`
     <div class="info-card">
-      <h4>Thông tin khách hàng</h4>
+      <h4>Thông tin khách hàng${c.manual?' <span style="color:var(--red);">(Khách mới - nhập tay)</span>':''}</h4>
       <div class="ir"><label>Mã KH</label><span style="color:var(--red);font-weight:800;">${c.id}</span></div>
       <div class="ir"><label>Tên</label><span>${c.name}</span></div>
       <div class="ir"><label>Địa chỉ</label><span>${c.address||'―'}</span></div>
@@ -748,11 +771,11 @@ function renderChatPanel(){
       <div class="ir"><label>Thanh toán</label><span>${c.seikyu||'―'}</span></div>
       <div class="ir"><label>Rank</label><span>${c.rank||'―'}</span></div>
     </div>
-    <button class="msg-btn" onclick="openMessenger('${msgUrl}')">💬 Mở chat Messenger</button>
-    <button class="msg-btn secondary" onclick="openMessengerSide('${msgUrl}')">⧉ Mở cạnh màn hình</button>
+    ${hasMsg?`<button class="msg-btn" onclick="openMessenger('${msgUrl}')">💬 Mở chat Messenger</button>
+    <button class="msg-btn secondary" onclick="openMessengerSide('${msgUrl}')">⧉ Mở cạnh màn hình</button>`:''}
     ${tags.length?`<div class="info-card"><h4>Tags</h4>${tags.map(x=>`<span class="tag-chip">${x}</span>`).join('')}</div>`:''}
     ${notes.length?`<div class="info-card"><h4>Ghi chú gần đây</h4>${notes.map(n=>`<div class="note-item">${n.text||''}<div class="nd">${n.date||''}</div></div>`).join('')}</div>`:''}
-    <div class="chat-note">ℹ️ Facebook không cho phép nhúng Messenger trực tiếp vào web khác. Nút trên sẽ mở chat trong cửa sổ riêng — dùng "Mở cạnh màn hình" để đặt cửa sổ chat bên phải màn hình.</div>
+    ${c.manual?`<div class="chat-note">ℹ️ Đây là khách hàng nhập tay, chưa có trong dữ liệu Google Sheet. Sau khi cập nhật lên sheet Facebook, lần sau hãy tìm khách qua ô tìm kiếm (F4) để lấy đầy đủ thông tin.</div>`:`<div class="chat-note">ℹ️ Facebook không cho phép nhúng Messenger trực tiếp vào web khác. Nút trên sẽ mở chat trong cửa sổ riêng — dùng "Mở cạnh màn hình" để đặt cửa sổ chat bên phải màn hình.</div>`}
   `;
 }
 function openMessenger(url){ window.open(url,'_blank'); }
