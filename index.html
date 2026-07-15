@@ -1018,9 +1018,10 @@ function addToCart(sku){
   const fp=ps>0&&ps<pr?ps:pr;
   const isXot=(p.category||'').toLowerCase().includes('xốt');
   const q=isXot?0.25:1;
+  const shipType=(p.sku==='XT02')?'cool':getShipType(p.category||'');
   const ex=t.cart.find(x=>x.sku===sku);
   if(ex) ex.qty=Math.round((ex.qty+q)*100)/100;
-  else t.cart.push({sku:p.sku,name:p.name,nameJP:p.nameJP||'',price:fp,originalPrice:pr,qty:q,isXot,shippingType:getShipType(p.category||''),discount:0,discountType:'yen'});
+  else t.cart.push({sku:p.sku,name:p.name,nameJP:p.nameJP||'',price:fp,originalPrice:pr,qty:q,isXot,shippingType:shipType,discount:0,discountType:'yen'});
   renderCart(); renderTabs();
 }
 function effPrice(i){
@@ -1069,7 +1070,7 @@ function renderCart(){
   const t=getTab();
   const cartEl=document.getElementById('cart-items'), sumEl=document.getElementById('summary');
   if(!t||!t.cart.length){ cartEl.innerHTML='<div style="text-align:center;color:var(--gray3);padding:24px;font-size:12px;">Giỏ hàng đang trống...</div>'; sumEl.innerHTML=''; return; }
-  const groups=[{key:'dry',label:'常温品 (Hàng Khô)',cls:'lbl-dry'},{key:'cool',label:'冷蔵品 (Hàng Mát)',cls:'lbl-cool'},{key:'cold',label:'冷凍品 (Hàng Lạnh)',cls:'lbl-cold'}];
+  const groups=[{key:'dry',label:'常温品 (Hàng Khô)',cls:'lbl-dry'},{key:'cool',label:'冷蔵食品 (Hàng Mát)',cls:'lbl-cool'},{key:'cold',label:'冷凍品 (Hàng Lạnh)',cls:'lbl-cold'}];
   let cartHtml='', sumHtml='', subAll=0;
   groups.forEach(g=>{
     const items=t.cart.filter(x=>x.shippingType===g.key);
@@ -1154,7 +1155,7 @@ function handlePrint(){
   let dc='',dn='',da='';
   if(t.choku){const s=t.choku;dc=s.code;dn=s.name;da=`〒${s.post} ${s.pref}${s.city}${s.add1} ${s.add2}`.trim();}
   else{const ty=document.getElementById('choku-input').value.trim();if(ty)dc=ty;}
-  const groups=[{key:'dry',label:'常温品 (Hàng Khô)',cls:'group-dry'},{key:'cool',label:'冷蔵品 (Hàng Mát)',cls:'group-cool'},{key:'cold',label:'冷凍品 (Hàng Lạnh)',cls:'group-cold'}];
+  const groups=[{key:'dry',label:'常温品 (Hàng Khô)',cls:'group-dry'},{key:'cool',label:'冷蔵食品 (Hàng Mát)',cls:'group-cool'},{key:'cold',label:'冷凍品 (Hàng Lạnh)',cls:'group-cold'}];
   const cShip=(items,tp)=>{if(t.freeShip[tp]!==null)return t.freeShip[tp];const s=items.reduce((a,i)=>a+(i.isXot?(effPrice(i))*(i.qty/0.25):(effPrice(i))*i.qty),0);return s<20000?items.reduce((a,i)=>a+i.qty,0)*500:0;};
   let allHtml='',grand=0,allCr=0;
   groups.forEach(g=>{
