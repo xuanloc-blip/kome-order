@@ -1086,7 +1086,8 @@ function renderCart(){
         <span class="cart-price${(it.discount||0)>0?' discounted':''}" onclick="openPricePop('${it.sku}',event)" title="Bấm để chỉnh giá">¥${effPrice(it).toLocaleString('ja-JP')}</span>
         <span class="cart-total">¥${tot.toLocaleString('ja-JP')}</span><span class="cart-del" onclick="delItem('${it.sku}')">×</span></div>`;
     });
-    const defS=sub<20000?crates*500:0;
+    const xt02It=items.find(x=>x.sku==='XT02');
+    const defS=(xt02It&&xt02It.qty>=2)?0:(sub<20000?crates*500:0);
     const ship=t.freeShip[g.key]!==null?t.freeShip[g.key]:defS;
     const gt=sub+ship; subAll+=gt;
     sumHtml+=`<div class="sum-row"><span class="sum-label">${g.label} 商品</span><span>¥${sub.toLocaleString('ja-JP')}</span></div>
@@ -1103,7 +1104,7 @@ function renderCart(){
   t.discount=parseInt(document.getElementById('disc-input').value)||0;
   const fin=Math.max(0,subAll+cod-t.discount);
   const itemSum=items=>items.reduce((s,i)=>s+(i.isXot?(effPrice(i))*(i.qty/0.25):(effPrice(i))*i.qty),0);
-  const cShip=(items,tp)=>{if(t.freeShip[tp]!==null)return t.freeShip[tp];const s=itemSum(items);return s<20000?items.reduce((a,i)=>a+i.qty,0)*500:0;};
+  const cShip=(items,tp)=>{if(t.freeShip[tp]!==null)return t.freeShip[tp];const xt=items.find(x=>x.sku==='XT02');if(xt&&xt.qty>=2)return 0;const s=items.reduce((a,i)=>a+(i.isXot?(effPrice(i))*(i.qty/0.25):(effPrice(i))*i.qty),0);return s<20000?items.reduce((a,i)=>a+i.qty,0)*500:0;};
   // Gom toàn đơn theo thuế suất, mỗi suất tính & làm tròn xuống 1 lần (インボイス方式)
   const goods8=itemSum(t.cart.filter(i=>!TAX10.includes(i.sku)));
   const goods10=itemSum(t.cart.filter(i=>TAX10.includes(i.sku)));
@@ -1246,8 +1247,9 @@ ${allHtml}
   if(sheetUrl){
     fetch(sheetUrl,{method:'POST',body:JSON.stringify({action:'saveOrder',data:{
       customerId:c.id,customerName:c.name,address:c.address||'',chokuId:dc,chokuName:dn,staff:salesRep,
-      items:t.cart.map(it=>{const ep=effPrice(it);return{sku:it.sku,name:it.name,nameJP:it.nameJP,qty:it.qty,price:it.price,discount:it.price-effPrice(it),total:Math.round(it.isXot?ep*(it.qty/.25):ep*it.qty)};}),
+      items:t.cart.map(it=>{const ep=effPrice(it);return{sku:it.sku,name:it.name,nameJP:it.nameJP,qty:it.qty,price:it.price,discount:it.price-effPrice(it),total:Math.round(it.isXot?ep*(it.qty/.25):ep*it.qty),shipType:it.shippingType||'dry'};}),
       shippingFee:['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0),
+      shippingFees:{dry:cShip(t.cart.filter(x=>x.shippingType==='dry'),'dry'),cold:cShip(t.cart.filter(x=>x.shippingType==='cold'),'cold'),cool:cShip(t.cart.filter(x=>x.shippingType==='cool'),'cool')},
       codFee:cod,discount:disc,tax:tax,grandTotal:fin,deliveryTime:dt,deliveryDate:dDate,note:nt
     }})})
     .then(r=>r.text())
