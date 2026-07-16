@@ -1167,7 +1167,7 @@ function handlePrint(){
       rn++;const ep=effPrice(it);
       const tot=Math.round(it.isXot?ep*(it.qty/0.25):ep*it.qty);
       sub+=tot;cr+=it.qty;
-      const dp=it.isXot?ep*4:ep, dop=it.isXot?it.originalPrice*4:it.originalPrice;
+      const dp=ep, dop=it.originalPrice;
       let pc=`¥${dp.toLocaleString('ja-JP')}`;
       if(dp<dop)pc+=`<br><small style="text-decoration:line-through;color:#999;">(¥${dop.toLocaleString('ja-JP')})</small>`;
       rows+=`<tr><td style="text-align:center;color:#666;">${rn}</td><td>${it.sku}</td><td>${it.name}<br><small>${it.nameJP}</small></td><td style="text-align:right;">${it.qty}</td><td>${pc}</td><td style="text-align:right;">¥${tot.toLocaleString('ja-JP')}</td></tr>`;
