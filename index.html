@@ -1247,7 +1247,21 @@ ${allHtml}
   if(sheetUrl){
     fetch(sheetUrl,{method:'POST',body:JSON.stringify({action:'saveOrder',data:{
       customerId:c.id,customerName:c.name,address:c.address||'',chokuId:dc,chokuName:dn,staff:salesRep,
-      items:t.cart.map(it=>{const ep=effPrice(it);return{sku:it.sku,name:it.name,nameJP:it.nameJP,qty:it.qty,price:it.price,discount:it.price-effPrice(it),total:Math.round(it.isXot?ep*(it.qty/.25):ep*it.qty),shipType:it.shippingType||'dry'};}),
+      items:t.cart.map(it=>{
+        const ep=effPrice(it);
+        const unitPrice = it.isXot ? it.price*4 : it.price;
+        const unitDiscount = it.isXot ? (it.price-ep)*4 : (it.price-ep);
+        return {
+          sku:it.sku,
+          name:it.name,
+          nameJP:it.nameJP,
+          qty:it.qty,
+          price:unitPrice,
+          discount:unitDiscount,
+          total:Math.round(it.isXot?ep*(it.qty/.25):ep*it.qty),
+          shipType:it.shippingType||'dry'
+        };
+      }),
       shippingFee:['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0),
       shippingFees:{dry:cShip(t.cart.filter(x=>x.shippingType==='dry'),'dry'),cold:cShip(t.cart.filter(x=>x.shippingType==='cold'),'cold'),cool:cShip(t.cart.filter(x=>x.shippingType==='cool'),'cool')},
       codFee:cod,discount:disc,tax:tax,grandTotal:fin,deliveryTime:dt,deliveryDate:dDate,note:nt
