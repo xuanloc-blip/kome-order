@@ -1157,7 +1157,7 @@ function handlePrint(){
   if(t.choku){const s=t.choku;dc=s.code;dn=s.name;da=`〒${s.post} ${s.pref}${s.city}${s.add1} ${s.add2}`.trim();}
   else{const ty=document.getElementById('choku-input').value.trim();if(ty)dc=ty;}
   const groups=[{key:'dry',label:'常温品 (Hàng Khô)',cls:'group-dry'},{key:'cool',label:'冷蔵品 (Hàng Mát)',cls:'group-cool'},{key:'cold',label:'冷凍品 (Hàng Lạnh)',cls:'group-cold'}];
-  const cShip=(items,tp)=>{if(t.freeShip[tp]!==null)return t.freeShip[tp];const s=items.reduce((a,i)=>a+(i.isXot?(effPrice(i))*(i.qty/0.25):(effPrice(i))*i.qty),0);return s<20000?items.reduce((a,i)=>a+i.qty,0)*500:0;};
+  const cShip=(items,tp)=>{if(t.freeShip[tp]!==null)return t.freeShip[tp];const xt=items.find(x=>x.sku==='XT02');if(xt&&xt.qty>=2)return 0;const s=items.reduce((a,i)=>a+(i.isXot?(effPrice(i))*(i.qty/0.25):(effPrice(i))*i.qty),0);return s<20000?items.reduce((a,i)=>a+i.qty,0)*500:0;};
   let allHtml='',grand=0,allCr=0;
   groups.forEach(g=>{
     const items=t.cart.filter(x=>x.shippingType===g.key);
