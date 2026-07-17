@@ -61,7 +61,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 #cust-id-dd { position: absolute; top: calc(100% + 4px); left: 0; width: 340px; max-width: 90vw; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); z-index: 300; max-height: 300px; overflow-y: auto; display: none; border: 1px solid var(--gray4); }
 #cust-id-dd.show { display: block; }
 .cust-dd-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid var(--gray5); }
-.cust-dd-item:hover { background: var(--yellow-light); }
+.cust-dd-item:hover, .cust-dd-item.dd-active { background: var(--yellow-light); }
 .cust-dd-name { font-weight: 700; font-size: 13px; }
 .cust-dd-sub { font-size: 11px; color: var(--gray3); margin-top: 2px; }
 #tabs-bar { display: flex; align-items: flex-end; gap: 4px; flex: 1; overflow-x: auto; scrollbar-width: none; height: 100%; padding-top: 10px; }
@@ -89,7 +89,11 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 #product-search-bar { padding: 10px 12px; border-bottom: 2px solid var(--yellow); display: flex; gap: 8px; background: var(--yellow-light); }
 #product-search-input { flex: 1; padding: 8px 12px; border: 1px solid var(--gray4); border-radius: 8px; font-size: 13px; outline: none; }
 #product-search-input:focus { border-color: var(--red); }
-#cat-filter { display: flex; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--gray5); overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
+#cat-filter { display: flex; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--gray5); overflow-x: auto; scrollbar-width: none; flex-shrink: 0; align-items: center; }
+#sort-wrap { margin-left: auto; flex-shrink: 0; display: flex; align-items: center; gap: 5px; }
+#sort-wrap label { font-size: 11px; color: var(--gray3); font-weight: 600; white-space: nowrap; }
+#sort-select { padding: 4px 8px; border: 1px solid var(--gray4); border-radius: 20px; font-size: 12px; background: var(--white); color: var(--gray2); cursor: pointer; outline: none; }
+#sort-select:focus { border-color: var(--red); }
 #cat-filter::-webkit-scrollbar { display: none; }
 .cat-btn { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--gray4); background: var(--white); font-size: 12px; cursor: pointer; white-space: nowrap; color: var(--gray2); flex-shrink: 0; }
 .cat-btn.active { background: var(--red); color: #fff; border-color: var(--red); font-weight: 700; }
@@ -143,7 +147,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 #choku-dd { position: absolute; top: calc(100% + 2px); left: 0; right: 0; background: var(--white); border-radius: 8px; box-shadow: var(--shadow); z-index: 100; max-height: 200px; overflow-y: auto; display: none; border: 1px solid var(--gray4); }
 #choku-dd.show { display: block; }
 .choku-item { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid var(--gray5); }
-.choku-item:hover { background: var(--yellow-light); }
+.choku-item:hover, .choku-item.dd-active { background: var(--yellow-light); }
 .ci-name { font-size: 12px; font-weight: 700; }
 .ci-addr { font-size: 10px; color: var(--gray3); }
 #cart-items { flex: 1 1 0; min-height: 0; overflow-y: auto; padding: 8px 10px; }
@@ -170,6 +174,13 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .sum-row.group { font-weight: 700; border-top: 1px dashed var(--gray4); margin-top: 3px; padding-top: 4px; }
 .sum-row.total { font-size: 16px; font-weight: 900; border-top: 2px solid var(--red); margin-top: 5px; padding-top: 6px; color: var(--red-dark); }
 .sum-row.disc { color: var(--red); font-weight: 600; }
+.sum-group-card { border-radius: 8px; padding: 6px 8px; margin-bottom: 8px; border-left: 4px solid; }
+.sum-group-card .sg-title { font-size: 11px; font-weight: 800; margin-bottom: 3px; }
+.sum-group-card .sum-row { padding: 1px 0; }
+.sum-group-card .sum-row.group { border-top: 1px dashed rgba(0,0,0,.15); margin-top: 3px; padding-top: 3px; }
+.sgc-dry { background: #fff3e0; border-color: var(--orange); } .sgc-dry .sg-title { color: var(--orange); }
+.sgc-cool { background: #e8f5e9; border-color: var(--green); } .sgc-cool .sg-title { color: var(--green); }
+.sgc-cold { background: #e3f2fd; border-color: var(--blue); } .sgc-cold .sg-title { color: var(--blue); }
 .sum-label { color: var(--gray2); }
 .ship-in, .cod-in { width: 68px; padding: 2px 5px; border: 1px solid var(--gray4); border-radius: 4px; font-size: 11px; text-align: right; }
 .cod-row { background: var(--red-light); border-radius: 6px; padding: 4px 6px; margin: 3px 0; }
@@ -387,9 +398,10 @@ let sheetUrl=localStorage.getItem(SHEET_URL_KEY)||'';
 let currentStaff=localStorage.getItem(STAFF_KEY)||'';
 let customerData={}, productData=[], chokuData=[], orderHistoryData=[];
 let expandedHistoryOrderId='';
-let currentPage=1, filteredProducts=[], currentCat='all';
+let currentPage=1, filteredProducts=[], currentCat='all', currentSort='default';
 let tabs=[], activeTabId=null, tabCounter=0;
 let msgWindow=null;
+let custDdIdx=-1, chokuDdIdx=-1
 
 // ============ STAFF SELECT ============
 function renderStaffScreen(){
@@ -717,14 +729,38 @@ function findExactCustomerById(id){
 function onCustIdInput(){
   const dd=document.getElementById('cust-id-dd');
   const matches=findCustomerMatches(document.getElementById('hdr-id-input').value);
+  custDdIdx=-1;
   if(!matches.length){ dd.classList.remove('show'); }
   else{
-    dd.innerHTML=matches.map(([u,c])=>`<div class="cust-dd-item" onclick="selectCustomerFromDd('${u}')"><div class="cust-dd-name">${c.name||'―'}</div><div class="cust-dd-sub">Mã: ${c.id||''} · ${c.pic||''}</div></div>`).join('');
+    dd.innerHTML=matches.map(([u,c],i)=>`<div class="cust-dd-item" data-idx="${i}" onclick="selectCustomerFromDd('${u}')"><div class="cust-dd-name">${c.name||'―'}</div><div class="cust-dd-sub">Mã: ${c.id||''} · ${c.pic||''}</div></div>`).join('');
     dd.classList.add('show');
   }
   applyCustomerFromInputs();
 }
+function moveCustDd(delta){
+  const dd=document.getElementById('cust-id-dd');
+  const items=[...dd.querySelectorAll('.cust-dd-item')];
+  if(!items.length) return;
+  custDdIdx=(custDdIdx+delta+items.length)%items.length;
+  items.forEach((el,i)=>el.classList.toggle('dd-active',i===custDdIdx));
+  items[custDdIdx].scrollIntoView({block:'nearest'});
+}
+function pickCustDd(){
+  const dd=document.getElementById('cust-id-dd');
+  const items=[...dd.querySelectorAll('.cust-dd-item')];
+  if(!items.length) return false;
+  (items[custDdIdx]||items[0]).click();
+  return true;
+}
 document.addEventListener('click',e=>{ if(!e.target.closest('#cust-id-wrap')) document.getElementById('cust-id-dd')?.classList.remove('show'); });
+document.getElementById('hdr-id-input').addEventListener('keydown',e=>{
+  const dd=document.getElementById('cust-id-dd');
+  if(!dd.classList.contains('show')) return;
+  if(e.key==='ArrowDown'){ e.preventDefault(); moveCustDd(1); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); moveCustDd(-1); }
+  else if(e.key==='Enter'){ e.preventDefault(); pickCustDd(); }
+  else if(e.key==='Escape'){ dd.classList.remove('show'); }
+});
 
 function selectCustomerFromDd(urlKey){
   const c=customerData[urlKey]; if(!c) return;
@@ -809,8 +845,16 @@ function openMessengerSide(url){
 // ============ PRODUCTS ============
 function renderCategories(){
   const cats=['all',...new Set(productData.map(p=>p.category).filter(Boolean))];
-  document.getElementById('cat-filter').innerHTML=cats.map(c=>`<button class="cat-btn ${c===currentCat?'active':''}" data-cat="${c}" onclick="setCat('${c.replace(/'/g,"\\'")}')">${c==='all'?'Tất cả':c}</button>`).join('');
+  document.getElementById('cat-filter').innerHTML=cats.map(c=>`<button class="cat-btn ${c===currentCat?'active':''}" data-cat="${c}" onclick="setCat('${c.replace(/'/g,"\\'")}')">${c==='all'?'Tất cả':c}</button>`).join('')
+    +`<div id="sort-wrap"><label>Sắp xếp</label><select id="sort-select" onchange="setSort(this.value)">
+      <option value="default"${currentSort==='default'?' selected':''}>Mặc định</option>
+      <option value="sale"${currentSort==='sale'?' selected':''}>Đang SALE lên đầu</option>
+      <option value="arrival"${currentSort==='arrival'?' selected':''}>Hàng sắp về (gần nhất)</option>
+      <option value="stock"${currentSort==='stock'?' selected':''}>Tồn kho nhiều nhất</option>
+      <option value="exp"${currentSort==='exp'?' selected':''}>Sắp hết hạn (gần nhất)</option>
+    </select></div>`;
 }
+function setSort(v){ currentSort=v; filterProducts(document.getElementById('product-search-input').value); }
 function setCat(cat){
   currentCat=cat; currentPage=1;
   document.querySelectorAll('.cat-btn').forEach(b=>b.classList.toggle('active',b.dataset.cat===cat));
@@ -834,7 +878,38 @@ function filterProducts(q){
     const mq=hay.includes(sq)||normVN(hay).includes(sqn);
     return mc&&mq;
   });
+  applySort();
   currentPage=1; renderProducts();
+}
+function parseDateVal(v){
+  if(!v) return null;
+  const s=String(v).trim();
+  const m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if(m) return new Date(parseInt(m[1]),parseInt(m[2])-1,parseInt(m[3])).getTime();
+  const d=new Date(s); return isNaN(d)?null:d.getTime();
+}
+function applySort(){
+  const num=v=>parseFloat(String(v||'').replace(/,/g,''))||0;
+  const isSale=p=>{const pr=num(p.price),ps=num(p.priceSale);return ps>0&&ps<pr;};
+  if(currentSort==='sale'){
+    filteredProducts.sort((a,b)=>(isSale(b)?1:0)-(isSale(a)?1:0));
+  }else if(currentSort==='stock'){
+    filteredProducts.sort((a,b)=>num(b.stock)-num(a.stock));
+  }else if(currentSort==='exp'){
+    filteredProducts.sort((a,b)=>{
+      const da=parseDateVal(a.expirationDate||a.expiry), db=parseDateVal(b.expirationDate||b.expiry);
+      if(da===null&&db===null) return 0;
+      if(da===null) return 1; if(db===null) return -1;   // không có hạn -> xuống cuối
+      return da-db;   // hạn gần nhất lên đầu
+    });
+  }else if(currentSort==='arrival'){
+    filteredProducts.sort((a,b)=>{
+      const da=parseDateVal(fieldVal(a,'Expected arrival date')), db=parseDateVal(fieldVal(b,'Expected arrival date'));
+      if(da===null&&db===null) return 0;
+      if(da===null) return 1; if(db===null) return -1;   // không có hàng về -> xuống cuối
+      return da-db;   // ngày về gần nhất lên đầu
+    });
+  }
 }
 function fmtDate(v){
   if(!v) return '';
@@ -975,6 +1050,15 @@ document.getElementById('product-search-input').addEventListener('keydown',e=>{
 const chokuInput=document.getElementById('choku-input'), chokuDd=document.getElementById('choku-dd');
 chokuInput.addEventListener('focus',()=>renderChokuDd(''));
 chokuInput.addEventListener('input',e=>renderChokuDd(e.target.value));
+chokuInput.addEventListener('keydown',e=>{
+  if(!chokuDd.classList.contains('show')) return;
+  const items=[...chokuDd.querySelectorAll('.choku-item')];
+  if(!items.length) return;
+  if(e.key==='ArrowDown'){ e.preventDefault(); chokuDdIdx=(chokuDdIdx+1)%items.length; items.forEach((el,i)=>el.classList.toggle('dd-active',i===chokuDdIdx)); items[chokuDdIdx].scrollIntoView({block:'nearest'}); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); chokuDdIdx=(chokuDdIdx-1+items.length)%items.length; items.forEach((el,i)=>el.classList.toggle('dd-active',i===chokuDdIdx)); items[chokuDdIdx].scrollIntoView({block:'nearest'}); }
+  else if(e.key==='Enter'){ e.preventDefault(); (items[chokuDdIdx]||items[0]).click(); }
+  else if(e.key==='Escape'){ chokuDd.classList.remove('show'); }
+});
 document.addEventListener('click',e=>{ if(!e.target.closest('#choku-wrap')) chokuDd.classList.remove('show'); });
 function renderChokuDd(q){
   const t=getTab();
@@ -992,9 +1076,9 @@ function renderChokuDd(q){
   }
   items=items.slice(0,30);
   if(!items.length){ chokuDd.classList.remove('show'); return; }
-  chokuDd.innerHTML=items.map(x=>`<div class="choku-item" onclick="selectChoku('${x.code}')"><div class="ci-name">📍 ${x.name} <span style="color:var(--gray3);font-weight:400;">(${x.code})</span>${x.customerCode?` <span style="color:var(--gray3);font-weight:400;">得意先:${x.customerCode}</span>`:''}</div><div class="ci-addr">〒${x.post} ${x.pref}${x.city}${x.add1} ${x.add2}</div></div>`).join('');
+  chokuDd.innerHTML=items.map((x,i)=>`<div class="choku-item" data-idx="${i}" onclick="selectChoku('${x.code}')"><div class="ci-name">📍 ${x.name} <span style="color:var(--gray3);font-weight:400;">(${x.code})</span>${x.customerCode?` <span style="color:var(--gray3);font-weight:400;">得意先:${x.customerCode}</span>`:''}</div><div class="ci-addr">〒${x.post} ${x.pref}${x.city}${x.add1} ${x.add2}</div></div>`).join('');
+  chokuDdIdx=-1;
   chokuDd.classList.add('show');
-}
 function selectChoku(code){
   const t=getTab(); if(!t) return;
   t.choku=chokuData.find(x=>x.code===code)||null;
@@ -1070,7 +1154,7 @@ function renderCart(){
   const t=getTab();
   const cartEl=document.getElementById('cart-items'), sumEl=document.getElementById('summary');
   if(!t||!t.cart.length){ cartEl.innerHTML='<div style="text-align:center;color:var(--gray3);padding:24px;font-size:12px;">Giỏ hàng đang trống...</div>'; sumEl.innerHTML=''; return; }
-  const groups=[{key:'dry',label:'常温品 (Hàng Khô)',cls:'lbl-dry'},{key:'cool',label:'冷蔵品 (Hàng Mát)',cls:'lbl-cool'},{key:'cold',label:'冷凍品 (Hàng Lạnh)',cls:'lbl-cold'}];
+  const groups=[{key:'dry',label:'常温品 (Hàng Khô)',cls:'lbl-dry',sgc:'sgc-dry'},{key:'cool',label:'冷蔵品 (Hàng Mát)',cls:'lbl-cool',sgc:'sgc-cool'},{key:'cold',label:'冷凍品 (Hàng Lạnh)',cls:'lbl-cold',sgc:'sgc-cold'}];
   let cartHtml='', sumHtml='', subAll=0;
   groups.forEach(g=>{
     const items=t.cart.filter(x=>x.shippingType===g.key);
@@ -1090,9 +1174,12 @@ function renderCart(){
     const defS=(xt02It&&xt02It.qty>=2)?0:(sub<20000?crates*500:0);
     const ship=t.freeShip[g.key]!==null?t.freeShip[g.key]:defS;
     const gt=sub+ship; subAll+=gt;
-    sumHtml+=`<div class="sum-row"><span class="sum-label">${g.label} 商品</span><span>¥${sub.toLocaleString('ja-JP')}</span></div>
-<div class="sum-row"><span class="sum-label">　送料 <input type="number" class="ship-in" value="${ship}" min="0" step="100" onchange="updShip('${g.key}',this.value)"></span><span>¥${ship.toLocaleString('ja-JP')}</span></div>
-<div class="sum-row group"><span>小計</span><span>¥${gt.toLocaleString('ja-JP')}</span></div>`;
+    sumHtml+=`<div class="sum-group-card ${g.sgc}">
+<div class="sg-title">${g.label}</div>
+<div class="sum-row"><span class="sum-label">商品</span><span>¥${sub.toLocaleString('ja-JP')}</span></div>
+<div class="sum-row"><span class="sum-label">送料 <input type="number" class="ship-in" value="${ship}" min="0" step="100" onchange="updShip('${g.key}',this.value)"></span><span>¥${ship.toLocaleString('ja-JP')}</span></div>
+<div class="sum-row group"><span>小計</span><span>¥${gt.toLocaleString('ja-JP')}</span></div>
+</div>`;
   });
   cartEl.innerHTML=cartHtml;
   let cod=0;
