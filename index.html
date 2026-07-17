@@ -401,7 +401,7 @@ let expandedHistoryOrderId='';
 let currentPage=1, filteredProducts=[], currentCat='all', currentSort='default';
 let tabs=[], activeTabId=null, tabCounter=0;
 let msgWindow=null;
-let custDdIdx=-1, chokuDdIdx=-1
+let custDdIdx=-1, chokuDdIdx=-1;
 
 // ============ STAFF SELECT ============
 function renderStaffScreen(){
@@ -1079,6 +1079,7 @@ function renderChokuDd(q){
   chokuDd.innerHTML=items.map((x,i)=>`<div class="choku-item" data-idx="${i}" onclick="selectChoku('${x.code}')"><div class="ci-name">📍 ${x.name} <span style="color:var(--gray3);font-weight:400;">(${x.code})</span>${x.customerCode?` <span style="color:var(--gray3);font-weight:400;">得意先:${x.customerCode}</span>`:''}</div><div class="ci-addr">〒${x.post} ${x.pref}${x.city}${x.add1} ${x.add2}</div></div>`).join('');
   chokuDdIdx=-1;
   chokuDd.classList.add('show');
+  }
 function selectChoku(code){
   const t=getTab(); if(!t) return;
   t.choku=chokuData.find(x=>x.code===code)||null;
