@@ -221,8 +221,8 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 #loading.hidden { display: none; }
 .spinner { width: 40px; height: 40px; border: 4px solid rgba(254,200,48,.35); border-top-color: var(--yellow); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-#settings-modal, #history-modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-#settings-modal.hidden, #history-modal.hidden { display: none; }
+#settings-modal, #history-modal, #oos-modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+#settings-modal.hidden, #history-modal.hidden, #oos-modal.hidden { display: none; }
 .modal { background: #fff; border-radius: 12px; padding: 24px; width: 470px; box-shadow: 0 8px 32px rgba(0,0,0,.3); }
 .modal.wide { width: min(920px, calc(100vw - 28px)); max-height: calc(100vh - 34px); display: flex; flex-direction: column; padding: 0; overflow: hidden; }
 .modal h2 { margin-bottom: 16px; font-size: 16px; color: var(--red-dark); }
@@ -323,7 +323,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
     <h2>⚠️ Sản phẩm đã hết hàng</h2>
     <p id="oos-modal-text" style="font-size:13px;color:var(--gray2);line-height:1.6;margin-bottom:18px;"></p>
     <div class="modal-btns">
-      <button class="btn-primary" onclick="confirmOOSAdd()">Bạn có chắc muốn thêm vào đơn hàng không?</button>
+      <button class="btn-primary" onclick="confirmOOSAdd()">Vẫn thêm vào đơn</button>
       <button class="btn-ghost" onclick="closeOOSModal()">Hủy</button>
     </div>
   </div>
@@ -1119,7 +1119,7 @@ function addToCart(sku){
   if(stockNum<=0){
     pendingOOSSku=sku;
     document.getElementById('oos-modal-text').textContent=
-      `Mã hàng ${p.sku} - ${productDisplayName(p.name)} hiện tồn kho = 0. Bạn có chắc muốn thêm vào đơn hàng không?`;
+      `${productDisplayName(p.name)} (${p.sku}) - Sản phẩm này hiện đã hết tồn kho. Bạn có chắc muốn thêm vào đơn hàng không?`;
     document.getElementById('oos-modal').classList.remove('hidden');
     return;
   }
