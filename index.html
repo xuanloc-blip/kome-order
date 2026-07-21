@@ -398,7 +398,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 
 <script>
 // ============ CONFIG ============
-const SHEET_URL_KEY='kome_sheet_url', CACHE_KEY='kome_data_cache', STAFF_KEY='kome_staff';
+const SHEET_URL_KEY='kome_sheet_url', CACHE_KEY='kome_data_cache_v2', STAFF_KEY='kome_staff';
 const CACHE_TTL=5*60*1000, PAGE_SIZE=18;
 const TAX10=['BS01','BS02','BS04','BS06','HAB05','HAB06','HAL02','HAL03','HAL08','HAL11','LD01','LD02','RV01','RV02','RV03','RV05','RV06','RV07','RV09'];
 const STAFF_LIST=[
@@ -829,8 +829,8 @@ function renderChatPanel(){
   if(!c){ body.innerHTML='<div class="chat-note">← Chọn khách hàng để xem thông tin và mở chat Messenger</div>'; return; }
   const tags=(c.tags||'').split(',').map(x=>x.trim()).filter(Boolean);
   const notes=Array.isArray(c.notes)?c.notes.slice(0,5):[];
-  const hasMsg=!!c.urlKey;
-  const msgUrl=hasMsg?('https://www.'+c.urlKey):'';
+  const hasMsg=!!c.fbUrl;
+  const msgUrl=hasMsg?('https://www.'+c.fbUrl):'';
   body.innerHTML=`
     <div class="info-card">
       <h4>Thông tin khách hàng${c.manual?' <span style="color:var(--red);">(Khách mới - nhập tay)</span>':''}</h4>
