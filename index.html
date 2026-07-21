@@ -136,7 +136,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 /* Col 2: Order */
 #col-order { display: flex; flex-direction: column; background: #fffdf8; min-width: 0; min-height: 0; }
 #order-header { padding: 10px 12px; border-bottom: 2px solid var(--yellow); background: var(--yellow-light); flex-shrink: 0; }
-.of { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.of { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .of:last-child { margin-bottom: 0; }
 .of label { font-size: 11px; color: var(--gray3); white-space: nowrap; width: 56px; flex-shrink: 0; font-weight: 600; }
 .of-val { font-size: 13px; font-weight: 700; flex: 1; }
@@ -200,7 +200,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 #chat-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--red-dark); margin-left: auto; line-height: 1; }
 #btn-cust-info { background: var(--white); color: var(--red-dark); border: 2px solid var(--yellow); border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 12px; font-weight: 700; white-space: nowrap; }
 #btn-cust-info:hover { background: var(--yellow-light); }
-#btn-new-cust { background: var(--red); color: #fff; border: none; border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 12px; font-weight: 700; white-space: nowrap; }
+#btn-new-cust { width: 30px; height: 30px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--red); color: #fff; border: none; border-radius: 8px; padding: 0; cursor: pointer; font-size: 14px; line-height: 1; }
 #btn-new-cust:hover { background: var(--red-dark); }
 #chat-header { padding: 10px 12px; background: var(--yellow); border-bottom: 1px solid var(--yellow-dark); font-size: 13px; font-weight: 800; color: var(--red-dark); flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
 #chat-body { flex: 1; overflow-y: auto; padding: 12px; }
@@ -366,7 +366,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
      <div class="of"><label>Mã KH</label>
         <div id="cust-id-wrap"><input id="hdr-id-input" class="of-val-input" placeholder="Nhập hoặc tìm mã KH (F4)..." autocomplete="off" oninput="onCustIdInput()" onfocus="onCustIdInput()"><div id="cust-id-dd"></div></div>
         <button id="btn-cust-info" onclick="toggleCustInfo()">👤 Liên hệ</button>
-        <button id="btn-new-cust" onclick="startNewCustomer()">➕ New</button>
+        <button id="btn-new-cust" onclick="startNewCustomer()" title="Thêm khách mới">➕</button>
       </div>
       <div class="of"><label>Khách</label><input id="hdr-customer-input" class="of-val-input" placeholder="Tên khách hàng..." oninput="onCustNameInput()"></div>
       <div class="of"><label>直送先</label>
