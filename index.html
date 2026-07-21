@@ -206,6 +206,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 .info-card h4 { font-size: 11px; color: var(--gray3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
 .ir { display: flex; margin-bottom: 6px; font-size: 12px; }
 .ir label { width: 74px; color: var(--gray3); flex-shrink: 0; }
+.ir input.of-val-input, .ir select.of-val-input { flex: 1; min-width: 0; font-size: 12px; padding: 4px 8px; }
 .ir span { font-weight: 600; flex: 1; word-break: break-word; }
 .msg-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; border: none; border-radius: 8px; background: #0084ff; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
 .msg-btn:hover { background: #006fd6; }
@@ -822,6 +823,8 @@ function applyCustomerFromInputs(){
       rank:prev.rank||'', tags:prev.tags||'', notes:prev.notes||[],
       urlKey:null, manual:true
     };
+    // Mã 0 = khách mới -> tự mở form nhập thông tin
+    if(idVal==='0') toggleCustInfo(true);
   }else{
     t.customer=null;
   }
@@ -836,11 +839,38 @@ function toggleCustInfo(force){
   el.classList.toggle('open', open);
   if(open) renderChatPanel();
 }
-
+function updManualCust(field,value){
+  const t=getTab(); if(!t||!t.customer||!t.customer.manual) return;
+  t.customer[field]=value;
+  if(field==='name') document.getElementById('hdr-customer-input').value=value;
+  if(field==='chokuText') document.getElementById('choku-input').value=value; // đổ vào ô 直送先 -> ra 納品先コード trên bản in
+  renderTabs();
+}
 function renderChatPanel(){
   const t=getTab(), c=t?.customer;
   const body=document.getElementById('chat-body');
   if(!c){ body.innerHTML='<div class="chat-note">← Chọn khách hàng để xem thông tin và mở chat Messenger</div>'; return; }
+  if(c.manual){
+    body.innerHTML=`
+      <div class="info-card">
+        <h4>Khách mới - Nhập thông tin <span style="color:var(--red);">(sẽ in lên đơn)</span></h4>
+        <div class="ir"><label>Mã KH</label><input class="of-val-input" value="${escapeHtml(c.id)}" onchange="updManualCust('id',this.value.trim());document.getElementById('hdr-id-input').value=this.value.trim();"></div>
+        <div class="ir"><label>Tên</label><input class="of-val-input" value="${escapeHtml(c.name==='(Khách mới)'?'':c.name)}" placeholder="Tên khách hàng" onchange="updManualCust('name',this.value.trim())"></div>
+        <div class="ir"><label>Địa chỉ</label><input class="of-val-input" value="${escapeHtml(c.address||'')}" placeholder="Địa chỉ" onchange="updManualCust('address',this.value.trim())"></div>
+        <div class="ir"><label>直送先</label><input class="of-val-input" value="${escapeHtml(c.chokuText||'')}" placeholder="Tên/địa chỉ giao hàng" onchange="updManualCust('chokuText',this.value.trim())"></div>
+        <div class="ir"><label>Phụ trách</label><input class="of-val-input" value="${escapeHtml(c.pic||'')}" placeholder="担当者" onchange="updManualCust('pic',this.value.trim())"></div>
+        <div class="ir"><label>Thanh toán</label>
+          <select class="of-val-input" onchange="updManualCust('seikyu',this.value)">
+            <option value=""${!c.seikyu?' selected':''}>--</option>
+            <option value="代引請求"${c.seikyu==='代引請求'?' selected':''}>代引請求</option>
+            <option value="掛売"${c.seikyu==='掛売'?' selected':''}>掛売</option>
+          </select>
+        </div>
+        <div class="ir"><label>Rank</label><input class="of-val-input" value="${escapeHtml(c.rank||'')}" placeholder="Rank" onchange="updManualCust('rank',this.value.trim())"></div>
+      </div>
+      <div class="chat-note">ℹ️ Thông tin nhập ở đây dùng ngay cho đơn hàng và bản in. Sau này thêm khách vào Google Sheet để lưu vĩnh viễn.</div>`;
+    return;
+  }
   const tags=(c.tags||'').split(',').map(x=>x.trim()).filter(Boolean);
   const notes=Array.isArray(c.notes)?c.notes.slice(0,5):[];
   const hasMsg=!!c.fbUrl;
