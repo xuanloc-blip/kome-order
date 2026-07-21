@@ -370,9 +370,8 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
       </div>
       <div class="of"><label>Khách</label><input id="hdr-customer-input" class="of-val-input" placeholder="Tên khách hàng..." oninput="onCustNameInput()"></div>
       <div class="of"><label>直送先</label>
-       <div id="choku-wrap"><input id="choku-input" placeholder="Tìm địa chỉ giao hàng..."><div id="choku-dd"></div></div>
+        <div id="choku-wrap"><input id="choku-input" placeholder="Tìm địa chỉ giao hàng..."><div id="choku-dd"></div></div>
       </div>
-      <div class="of"><label>住所</label><span class="of-val" id="choku-addr" style="font-size:11px;font-weight:500;color:var(--gray2);line-height:1.4;">―</span></div>
       <div class="of"><label>時間帯</label>
         <select id="delivery-time" style="flex:1;">
           <option value="">--</option><option>最短</option><option>午前中</option>
@@ -472,8 +471,6 @@ function setActiveTab(id){
   document.getElementById('order-note').value=t.note;
   document.getElementById('disc-input').value=t.discount;
   document.getElementById('choku-input').value=t.choku?t.choku.name:'';
-  document.getElementById('choku-input').value=t.choku?t.choku.name:'';
-  updateChokuAddr();   // ← thêm
 }
 function closeTab(id,e){
   e&&e.stopPropagation();
@@ -835,7 +832,6 @@ function applyCustomerFromInputs(){
   renderTabs();
   renderChatPanel();
   renderChokuDd(document.getElementById('choku-input').value);
-  
 }
 // ============ CHAT PANEL (DRAWER) ============
 function toggleCustInfo(force){
@@ -859,8 +855,6 @@ function confirmManualCust(){
   document.getElementById('hdr-customer-input').value=c.name;
   if(c.chokuText) document.getElementById('choku-input').value=c.chokuText;
   renderTabs();
-  if(c.chokuText) document.getElementById('choku-input').value=c.chokuText;
-  updateChokuAddr();   // ← thêm
   toggleCustInfo(false);  // đóng drawer, quay lại lên đơn
   renderCart();           // nếu chọn 代引請求 thì phí COD hiện ngay trong summary
 }
@@ -1199,13 +1193,6 @@ function selectChoku(code){
   t.choku=chokuData.find(x=>x.code===code)||null;
   chokuDd.classList.remove('show');
   if(t.choku) chokuInput.value=t.choku.name;
-}
-function selectChoku(code){
-  const t=getTab(); if(!t) return;
-  t.choku=chokuData.find(x=>x.code===code)||null;
-  chokuDd.classList.remove('show');
-  if(t.choku) chokuInput.value=t.choku.name;
-  updateChokuAddr();   // ← thêm
 }
 
 // ============ CART ============
