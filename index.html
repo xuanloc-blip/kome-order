@@ -823,8 +823,8 @@ function applyCustomerFromInputs(){
       rank:prev.rank||'', tags:prev.tags||'', notes:prev.notes||[],
       urlKey:null, manual:true
     };
-    // Mã 0 = khách mới -> tự mở form nhập thông tin
-    if(idVal==='0') toggleCustInfo(true);
+    // Mã * = khách mới -> tự mở form nhập thông tin
+    if(idVal==='＊') toggleCustInfo(true);
   }else{
     t.customer=null;
   }
