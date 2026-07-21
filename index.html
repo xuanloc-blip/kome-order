@@ -136,7 +136,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 /* Col 2: Order */
 #col-order { display: flex; flex-direction: column; background: #fffdf8; min-width: 0; min-height: 0; }
 #order-header { padding: 10px 12px; border-bottom: 2px solid var(--yellow); background: var(--yellow-light); flex-shrink: 0; }
-.of { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.of { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
 .of:last-child { margin-bottom: 0; }
 .of label { font-size: 11px; color: var(--gray3); white-space: nowrap; width: 56px; flex-shrink: 0; font-weight: 600; }
 .of-val { font-size: 13px; font-weight: 700; flex: 1; }
@@ -365,7 +365,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
     <div id="order-header">
      <div class="of"><label>Mã KH</label>
         <div id="cust-id-wrap"><input id="hdr-id-input" class="of-val-input" placeholder="Nhập hoặc tìm mã KH (F4)..." autocomplete="off" oninput="onCustIdInput()" onfocus="onCustIdInput()"><div id="cust-id-dd"></div></div>
-        <button id="btn-cust-info" onclick="toggleCustInfo()">👤 Thông tin & liên hệ</button>
+        <button id="btn-cust-info" onclick="toggleCustInfo()">👤 Liên hệ</button>
         <button id="btn-new-cust" onclick="startNewCustomer()">➕ Khách mới</button>
       </div>
       <div class="of"><label>Khách</label><input id="hdr-customer-input" class="of-val-input" placeholder="Tên khách hàng..." oninput="onCustNameInput()"></div>
