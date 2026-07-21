@@ -200,6 +200,8 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 #chat-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--red-dark); margin-left: auto; line-height: 1; }
 #btn-cust-info { background: var(--white); color: var(--red-dark); border: 2px solid var(--yellow); border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 12px; font-weight: 700; white-space: nowrap; }
 #btn-cust-info:hover { background: var(--yellow-light); }
+#btn-new-cust { background: var(--red); color: #fff; border: none; border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 12px; font-weight: 700; white-space: nowrap; }
+#btn-new-cust:hover { background: var(--red-dark); }
 #chat-header { padding: 10px 12px; background: var(--yellow); border-bottom: 1px solid var(--yellow-dark); font-size: 13px; font-weight: 800; color: var(--red-dark); flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
 #chat-body { flex: 1; overflow-y: auto; padding: 12px; }
 .info-card { background: #fffdf5; border: 1px solid var(--yellow); border-radius: var(--radius); padding: 12px; margin-bottom: 12px; }
@@ -364,6 +366,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
      <div class="of"><label>Mã KH</label>
         <div id="cust-id-wrap"><input id="hdr-id-input" class="of-val-input" placeholder="Nhập hoặc tìm mã KH (F4)..." autocomplete="off" oninput="onCustIdInput()" onfocus="onCustIdInput()"><div id="cust-id-dd"></div></div>
         <button id="btn-cust-info" onclick="toggleCustInfo()">👤 Thông tin & liên hệ</button>
+        <button id="btn-new-cust" onclick="startNewCustomer()">➕ Khách mới</button>
       </div>
       <div class="of"><label>Khách</label><input id="hdr-customer-input" class="of-val-input" placeholder="Tên khách hàng..." oninput="onCustNameInput()"></div>
       <div class="of"><label>直送先</label>
@@ -823,8 +826,6 @@ function applyCustomerFromInputs(){
       rank:prev.rank||'', tags:prev.tags||'', notes:prev.notes||[],
       urlKey:null, manual:true
     };
-    // Mã * = khách mới -> tự mở form nhập thông tin
-    if(idVal==='＊') toggleCustInfo(true);
   }else{
     t.customer=null;
   }
@@ -839,12 +840,32 @@ function toggleCustInfo(force){
   el.classList.toggle('open', open);
   if(open) renderChatPanel();
 }
+// BẢN MỚI — chỉ LƯU vào bộ nhớ, chưa đổ ra đơn
 function updManualCust(field,value){
   const t=getTab(); if(!t||!t.customer||!t.customer.manual) return;
   t.customer[field]=value;
-  if(field==='name') document.getElementById('hdr-customer-input').value=value;
-  if(field==='chokuText') document.getElementById('choku-input').value=value; // đổ vào ô 直送先 -> ra 納品先コード trên bản in
+}
+function confirmManualCust(){
+  const t=getTab(); if(!t||!t.customer||!t.customer.manual) return;
+  const c=t.customer;
+  if(!c.name){ alert('Vui lòng nhập tên khách hàng!'); return; }
+  if(!c.name||c.name==='(Khách mới)') c.name='(Khách mới)';
+  // Đổ về các ô trên đơn hàng
+  document.getElementById('hdr-id-input').value=c.id||'';
+  document.getElementById('hdr-customer-input').value=c.name;
+  if(c.chokuText) document.getElementById('choku-input').value=c.chokuText;
   renderTabs();
+  toggleCustInfo(false);  // đóng drawer, quay lại lên đơn
+  renderCart();           // nếu chọn 代引請求 thì phí COD hiện ngay trong summary
+}
+function startNewCustomer(){
+  let t=getTab(); if(!t){ newTab(); t=getTab(); }
+  t.customer={ id:'', name:'', address:'', chokuText:'', pic:'', seikyu:'',
+    rank:'', tags:'', notes:[], urlKey:null, manual:true };
+  document.getElementById('hdr-id-input').value='';
+  document.getElementById('hdr-customer-input').value='';
+  renderTabs();
+  toggleCustInfo(true);   // mở drawer -> renderChatPanel tự hiện form vì c.manual=true
 }
 function renderChatPanel(){
   const t=getTab(), c=t?.customer;
@@ -868,6 +889,7 @@ function renderChatPanel(){
         </div>
         <div class="ir"><label>Rank</label><input class="of-val-input" value="${escapeHtml(c.rank||'')}" placeholder="Rank" onchange="updManualCust('rank',this.value.trim())"></div>
       </div>
+      <button class="btn-primary" style="width:100%;margin-bottom:8px;" onclick="confirmManualCust()">✔ Xác nhận</button>
       <div class="chat-note">ℹ️ Thông tin nhập ở đây dùng ngay cho đơn hàng và bản in. Sau này thêm khách vào Google Sheet để lưu vĩnh viễn.</div>`;
     return;
   }
