@@ -878,7 +878,7 @@ function renderChatPanel(){
         <div class="ir"><label>Mã KH</label><input class="of-val-input" value="${escapeHtml(c.id)}" onchange="updManualCust('id',this.value.trim());document.getElementById('hdr-id-input').value=this.value.trim();"></div>
         <div class="ir"><label>Tên</label><input class="of-val-input" value="${escapeHtml(c.name==='(Khách mới)'?'':c.name)}" placeholder="Tên khách hàng" onchange="updManualCust('name',this.value.trim())"></div>
         <div class="ir"><label>Địa chỉ</label><input class="of-val-input" value="${escapeHtml(c.address||'')}" placeholder="Địa chỉ" onchange="updManualCust('address',this.value.trim())"></div>
-        <div class="ir"><label>直送先</label><input class="of-val-input" value="${escapeHtml(c.chokuText||'')}" placeholder="Tên/địa chỉ giao hàng" onchange="updManualCust('chokuText',this.value.trim())"></div>
+        <div class="ir"><label>直送先</label><input class="of-val-input" value="${escapeHtml(c.chokuText||'')}" placeholder="Tên/Mã 直送先 " onchange="updManualCust('chokuText',this.value.trim())"></div>
         <div class="ir"><label>Phụ trách</label><input class="of-val-input" value="${escapeHtml(c.pic||'')}" placeholder="担当者" onchange="updManualCust('pic',this.value.trim())"></div>
         <div class="ir"><label>Thanh toán</label>
           <select class="of-val-input" onchange="updManualCust('seikyu',this.value)">
