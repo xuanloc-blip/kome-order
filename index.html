@@ -1483,7 +1483,7 @@ ${allHtml}
       }),
       shippingFee:['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0),
       shippingFees:{dry:cShip(t.cart.filter(x=>x.shippingType==='dry'),'dry'),cold:cShip(t.cart.filter(x=>x.shippingType==='cold'),'cold'),cool:cShip(t.cart.filter(x=>x.shippingType==='cool'),'cool')},
-      codFee:cod,discount:disc,tax:tax,grandTotal:fin,deliveryTime:dt,deliveryDate:dDate,note:nt
+      codFee:cod,isDaibiki:(t.customer?.seikyu==='代引請求'),discount:disc,tax:tax,grandTotal:fin,deliveryTime:dt,deliveryDate:dDate,note:nt
     }})})
     .then(r=>r.text())
     .then(txt=>{
