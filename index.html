@@ -1267,12 +1267,14 @@ function openPricePop(sku,ev){
       </div>
       <div class="pp-row"><label>Giá bán</label><input id="pp-final" type="number" value="${effPrice(it)}"></div>`;
     pricePopEl.querySelector('#pp-disc').onchange=e=>{it.discount=parseFloat(e.target.value)||0;renderCart();draw();};
+    pricePopEl.querySelector('#pp-disc').onfocus=e=>e.target.select();
     pricePopEl.querySelector('#pp-yen').onclick=()=>{it.discountType='yen';renderCart();draw();};
     pricePopEl.querySelector('#pp-pct').onclick=()=>{it.discountType='pct';renderCart();draw();};
     pricePopEl.querySelector('#pp-final').onchange=e=>{
       const v=parseFloat(e.target.value)||0;
      it.discountType='yen'; it.discount=it.price-v;   // âm = tăng giá, dương = giảm giá
       renderCart();draw();
+    pricePopEl.querySelector('#pp-final').onfocus=e=>e.target.select();
     };
   };
   draw();
