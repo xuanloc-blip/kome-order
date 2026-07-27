@@ -1274,8 +1274,8 @@ function openPricePop(sku,ev){
       const v=parseFloat(e.target.value)||0;
      it.discountType='yen'; it.discount=it.price-v;   // âm = tăng giá, dương = giảm giá
       renderCart();draw();
-    pricePopEl.querySelector('#pp-final').onfocus=e=>e.target.select();
     };
+    pricePopEl.querySelector('#pp-final').onfocus=e=>e.target.select();
   };
   draw();
   document.body.appendChild(pricePopEl);
