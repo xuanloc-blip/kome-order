@@ -1272,7 +1272,7 @@ function openPricePop(sku,ev){
     pricePopEl.querySelector('#pp-pct').onclick=()=>{it.discountType='pct';renderCart();draw();};
     pricePopEl.querySelector('#pp-final').onchange=e=>{
       const v=parseFloat(e.target.value)||0;
-     it.discountType='yen'; it.discount=it.price-v;   // âm = tăng giá, dương = giảm giá
+      it.discountType='yen'; it.discount=it.price-v;
       renderCart();draw();
     };
     pricePopEl.querySelector('#pp-final').onfocus=e=>e.target.select();
@@ -1282,6 +1282,12 @@ function openPricePop(sku,ev){
   const r=ev.target.getBoundingClientRect();
   pricePopEl.style.top=Math.min(r.bottom+4,window.innerHeight-170)+'px';
   pricePopEl.style.left=Math.max(8,r.right-216)+'px';
+
+  // 👉 Tự động focus + bôi đen ô "Giá bán" ngay khi mở popup
+  requestAnimationFrame(()=>{
+    const finalInput=pricePopEl.querySelector('#pp-final');
+    if(finalInput){ finalInput.focus(); finalInput.select(); }
+  });
 }
 document.addEventListener('click',e=>{ if(pricePopEl&&!e.target.closest('#price-pop')) closePricePop(); });
 function renderCart(){
