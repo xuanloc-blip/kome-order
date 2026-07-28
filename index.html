@@ -701,14 +701,18 @@ function editHistoryOrder(id){
   (o.items||[]).forEach(i=>{
     const p=productData.find(x=>x.sku===i.sku);
     const isXot=p?(p.category||'').toLowerCase().includes('xốt'):false;
-    // i.price/i.discount duoc luu theo don gia hien thi (case, tuc x4 voi hang xot) - phai chia lai
-    // ve don gia noi bo (theo tung 0.25) thi effPrice/tinh tien moi dung nhu truoc khi luu.
+    // i.price duoc luu theo don gia hien thi (case, tuc x4 voi hang xot) - phai chia lai ve don gia noi bo.
+    // Khong dua vao cot "discount" rieng (khong chac backend co luu dung theo tung dong SP) - thay vao do
+    // suy effPrice truc tiep tu i.price va i.lineTotal (2 cot chac chan dung) roi tinh nguoc ra discount.
     const savedPrice=parseFloat(String(i.price||'').replace(/,/g,''))||0;
-    const savedDiscount=parseFloat(String(i.discount||'').replace(/,/g,''))||0;
+    const qty=parseFloat(i.qty)||1;
+    const lineTotal=parseFloat(String(i.lineTotal||'').replace(/,/g,''))||0;
     const price=isXot?savedPrice/4:savedPrice;
-    const discount=isXot?savedDiscount/4:savedDiscount;
+    const units=isXot?qty/0.25:qty;
+    const ep=units>0?lineTotal/units:price;
+    const discount=price-ep;
     t.cart.push({sku:i.sku,name:i.productName||(p?p.name:''),nameJP:i.productNameJP||(p?p.nameJP:''),
-      price:price,originalPrice:price,qty:parseFloat(i.qty)||1,isXot:isXot,
+      price:price,originalPrice:price,qty:qty,isXot:isXot,
       shippingType:p?getShipType(p.category||''):'dry',discount:discount,discountType:'yen'});
   });
   setActiveTab(t.id); closeOrderHistory();
