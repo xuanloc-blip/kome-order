@@ -145,18 +145,24 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 #hdr-id-input { color: var(--red); }
 .of input, .of select { padding: 5px 8px; border: 1px solid var(--gray4); border-radius: 6px; font-size: 12px; outline: none; background: var(--white); }
 .of input:focus, .of select:focus { border-color: var(--red); }
-#paste-order-box { border: 2px dashed var(--yellow); border-radius: 8px; margin: 0 12px 8px; background: var(--yellow-light); overflow: hidden; }
-#paste-order-head { display:flex; align-items:center; justify-content:space-between; padding:6px 10px; cursor:pointer; font-size:12px; font-weight:800; color: var(--red-dark); }
-#paste-order-toggle-icon { font-size:16px; transition: transform .2s; }
-#paste-order-toggle-icon.open { transform: rotate(45deg); }
-#paste-order-body { display:none; padding: 0 10px 10px; }
-#paste-order-body.show { display:block; }
-#paste-order-textarea { width:100%; min-height:100px; padding:8px; border:1px solid var(--gray4); border-radius:8px; font-size:12px; resize:vertical; outline:none; font-family:inherit; }
-#paste-order-textarea:focus { border-color: var(--red); }
-.paste-order-actions { display:flex; align-items:center; gap:10px; margin-top:6px; }
-.paste-order-actions label { font-size:11px; color: var(--gray2); display:flex; align-items:center; gap:4px; cursor:pointer; }
-#btn-do-paste-order { background: var(--red); color:#fff; border:none; border-radius:8px; padding:7px 14px; font-size:12px; font-weight:700; cursor:pointer; }
-#btn-do-paste-order:hover { filter:brightness(1.1); }  
+#paste-order-box { border: 1px solid var(--gray4); border-radius: 10px; margin: 8px 12px 10px; background: var(--white); overflow: hidden; }
+#paste-order-head { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; cursor:pointer; font-size:12px; font-weight:700; color: var(--gray1); user-select:none; transition: background .15s; }
+#paste-order-head:hover { background: var(--gray5); }
+#paste-order-head .poh-icon { margin-right:6px; }
+#paste-order-toggle-icon { font-size:11px; color: var(--gray3); transition: transform .2s; }
+#paste-order-toggle-icon.open { transform: rotate(180deg); }
+#paste-order-body { display:grid; grid-template-rows: 0fr; transition: grid-template-rows .22s ease, border-color .22s ease; border-top: 1px solid transparent; }
+#paste-order-body.show { grid-template-rows: 1fr; border-top-color: var(--gray5); }
+#paste-order-body .paste-order-inner { overflow:hidden; min-height:0; padding: 10px 12px 12px; }
+#paste-order-textarea { width:100%; min-height:90px; padding:8px 10px; border:1px solid var(--gray4); border-radius:8px; font-size:12px; resize:vertical; outline:none; font-family:inherit; background: var(--gray5); }
+#paste-order-textarea:focus { border-color: var(--red); background: var(--white); }
+.paste-order-actions { display:flex; align-items:center; gap:12px; margin-top:8px; }
+.paste-order-actions label { font-size:11px; color: var(--gray3); display:flex; align-items:center; gap:4px; cursor:pointer; }
+#btn-do-paste-order { background: var(--red); color:#fff; border:none; border-radius:8px; padding:7px 14px; font-size:12px; font-weight:700; cursor:pointer; transition: filter .15s; }
+#btn-do-paste-order:hover { filter:brightness(1.1); }
+#choku-wrap { position: relative; flex: 1; }
+#choku-input { width: 100%; }
+#choku-dd { position: absolute; top: calc(100% + 2px); left: 0; right: 0; background: var(--white); border-radius: 8px; box-shadow: var(--shadow); z-index: 100; max-height: 200px; overflow-y: auto; display: none; border: 1px solid var(--gray4); } 
 #choku-wrap { position: relative; flex: 1; }
 #choku-input { width: 100%; }
 #choku-dd { position: absolute; top: calc(100% + 2px); left: 0; right: 0; background: var(--white); border-radius: 8px; box-shadow: var(--shadow); z-index: 100; max-height: 200px; overflow-y: auto; display: none; border: 1px solid var(--gray4); }
@@ -397,14 +403,16 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
     </div>
     <div id="paste-order-box">
   <div id="paste-order-head" onclick="togglePasteOrder()">
-    <span>📋 Dán đơn hàng nhanh (từ tin nhắn)</span>
-    <span id="paste-order-toggle-icon">+</span>
+    <span><span class="poh-icon">📋</span>Dán đơn hàng nhanh (từ tin nhắn)</span>
+    <span id="paste-order-toggle-icon">▾</span>
   </div>
   <div id="paste-order-body">
-    <textarea id="paste-order-textarea" placeholder="Dán nội dung, ví dụ:&#10;- [BS02] - Bia Saigon Lager - ¥4.248&#10;Số lượng: 1 thùng"></textarea>
-    <div class="paste-order-actions">
-      <button id="btn-do-paste-order" onclick="handlePasteOrder()">➕ Đưa vào giỏ hàng</button>
-      <label><input type="checkbox" id="paste-order-replace"> Thay thế giỏ hàng hiện tại</label>
+    <div class="paste-order-inner">
+      <textarea id="paste-order-textarea" placeholder="Dán nội dung, ví dụ:&#10;- [BS02] - Bia Saigon Lager - ¥4.248&#10;Số lượng: 1 thùng"></textarea>
+      <div class="paste-order-actions">
+        <button id="btn-do-paste-order" onclick="handlePasteOrder()">➕ Đưa vào giỏ hàng</button>
+        <label><input type="checkbox" id="paste-order-replace"> Thay thế giỏ hàng hiện tại</label>
+      </div>
     </div>
   </div>
 </div>
@@ -1248,7 +1256,6 @@ function addToCart(sku){
   const icon=document.getElementById('paste-order-toggle-icon');
   const open=body.classList.toggle('show');
   icon.classList.toggle('open',open);
-  icon.textContent = open ? '×' : '+';
   if(open) document.getElementById('paste-order-textarea').focus();
 }
 function handlePasteOrder(){
