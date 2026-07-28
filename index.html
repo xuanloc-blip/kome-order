@@ -1440,7 +1440,7 @@ document.getElementById('disc-input').addEventListener('change',()=>renderCart()
 document.getElementById('order-note').addEventListener('input',()=>{const t=getTab();if(t)t.note=document.getElementById('order-note').value;});
 
 // ============ PRINT ============
-function handlePrint(){
+async function handlePrint(){
   const t=getTab();
   if(!t?.cart.length){alert('Giỏ hàng đang trống!');return;}
   if(!t.customer){alert('Chưa chọn khách hàng!');return;}
@@ -1502,6 +1502,65 @@ function handlePrint(){
   const discHtml=disc>0?`<tr><td class="tl">割引 (Giảm giá)</td><td></td><td class="tv" style="color:#D42D27;">-¥${disc.toLocaleString('ja-JP')}</td></tr>`:'';
   const c=t.customer;
   const salesRep = (currentStaff==='愛華 本田') ? currentStaff : (c.pic||'');
+  
+  const saveData={
+    customerId:c.id,customerName:c.name,address:c.address||'',chokuId:dc,chokuName:dn,staff:salesRep,
+    items:t.cart.map(it=>{
+      const ep=effPrice(it);
+      const unitPrice = it.isXot ? it.price*4 : it.price;
+      const unitDiscount = it.isXot ? (it.price-ep)*4 : (it.price-ep);
+      return {
+        sku:it.sku,
+        name:it.name,
+        nameJP:it.nameJP,
+        qty:it.qty,
+        price:unitPrice,
+        discount:unitDiscount,
+        total:Math.round(it.isXot?ep*(it.qty/.25):ep*it.qty),
+        shipType:it.shippingType||'dry'
+      };
+    }),
+    shippingFee:['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0),
+    shippingFees:{dry:cShip(t.cart.filter(x=>x.shippingType==='dry'),'dry'),cold:cShip(t.cart.filter(x=>x.shippingType==='cold'),'cold'),cool:cShip(t.cart.filter(x=>x.shippingType==='cool'),'cool')},
+    codFee:cod,isDaibiki:(t.customer?.seikyu==='代引請求'),discount:disc,tax:tax,grandTotal:fin,deliveryTime:dt,deliveryDate:dDate,note:nt
+  };
+
+  // Lưu đơn TRƯỚC để lấy 注文番号 thật do Apps Script sinh (LockService đảm bảo không trùng số),
+  // rồi mới in kèm mã đó — tránh in ra một mã "đoán trước" có thể không khớp dữ liệu đã lưu.
+  let orderId='', orderCode='';
+  const printBtn=document.getElementById('btn-print');
+  const printBtnLabel=printBtn?printBtn.textContent:'';
+  if(sheetUrl){
+    if(printBtn){printBtn.disabled=true;printBtn.textContent='⏳ Đang tạo mã đơn...';}
+    try{
+      const res=await fetch(sheetUrl,{method:'POST',body:JSON.stringify({action:'saveOrder',data:saveData})});
+      const txt=await res.text();
+      console.log('[saveOrder] Phản hồi từ server:', txt);
+      let j=null; try{ j=JSON.parse(txt); }catch(e){}
+      if(!j||j.status==='error'){
+        const msg=(j&&j.message)||'Không rõ lỗi';
+        if(!confirm('Lưu đơn thất bại: '+msg+'\nBạn có muốn IN đơn (không có mã đơn hàng) không?')){
+          if(printBtn){printBtn.disabled=false;printBtn.textContent=printBtnLabel;}
+          return;
+        }
+      }else{
+        orderId=j.orderId||'';
+        orderCode=orderId.slice(-3);
+      }
+    }catch(err){
+      console.error('[saveOrder] Lỗi khi lưu đơn hàng:', err);
+      if(!confirm('Lưu đơn thất bại: '+err.message+'\nBạn có muốn IN đơn (không có mã đơn hàng) không?')){
+        if(printBtn){printBtn.disabled=false;printBtn.textContent=printBtnLabel;}
+        return;
+      }
+    }
+    if(printBtn){printBtn.disabled=false;printBtn.textContent=printBtnLabel;}
+  }
+
+  const now=new Date();
+  const printDate=now.toLocaleDateString('ja-JP');
+  const printTime=now.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+
   const html=`<html><head><title>注文書 - ${c.name}</title><meta charset="UTF-8"><style>
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;margin:0;font-size:8pt;color:#000;background:#f4f4f4}
 #inv{max-width:1000px;margin:0 auto;padding:10px 12px;background:#fff}
@@ -1525,7 +1584,8 @@ table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:4p
 <button class="np" onclick="window.print()" style="padding:10px 20px;font-size:16px;margin:10px;cursor:pointer;">🖨 In Hóa Đơn</button>
 <div id="inv"><h1>注 文 請 書 (小売店専用 / ケース販売)</h1>
 <table class="ht">
-<tr><td class="lb">得意先コード</td><td class="vl">${c.id}</td><td class="lb">日付</td><td class="vl">${new Date().toLocaleDateString('ja-JP')}</td></tr>
+<tr><td class="lb">得意先コード</td><td class="vl">${c.id}</td><td class="lb">日付</td><td class="vl">${printDate}</td></tr>
+<tr><td class="lb">注文番号</td><td class="vl">${orderCode?`<b>#${orderCode}</b>`:'—'}</td><td class="lb">時刻</td><td class="vl">${printTime}</td></tr>
 <tr><td class="lb">会社名</td><td class="vl" colspan="3">${c.name}</td></tr>
 <tr><td class="lb">住所</td><td class="vl" colspan="3">${c.address||''}</td></tr>
 <tr><td colspan="4" class="sep"></td></tr>
@@ -1543,39 +1603,6 @@ ${allHtml}
   const w=window.open('','_blank');
   w.document.write(html);w.document.close();w.focus();
   setTimeout(()=>w.print(),500);
-  if(sheetUrl){
-    fetch(sheetUrl,{method:'POST',body:JSON.stringify({action:'saveOrder',data:{
-      customerId:c.id,customerName:c.name,address:c.address||'',chokuId:dc,chokuName:dn,staff:salesRep,
-      items:t.cart.map(it=>{
-        const ep=effPrice(it);
-        const unitPrice = it.isXot ? it.price*4 : it.price;
-        const unitDiscount = it.isXot ? (it.price-ep)*4 : (it.price-ep);
-        return {
-          sku:it.sku,
-          name:it.name,
-          nameJP:it.nameJP,
-          qty:it.qty,
-          price:unitPrice,
-          discount:unitDiscount,
-          total:Math.round(it.isXot?ep*(it.qty/.25):ep*it.qty),
-          shipType:it.shippingType||'dry'
-        };
-      }),
-      shippingFee:['dry','cool','cold'].reduce((s,tp)=>s+cShip(t.cart.filter(x=>x.shippingType===tp),tp),0),
-      shippingFees:{dry:cShip(t.cart.filter(x=>x.shippingType==='dry'),'dry'),cold:cShip(t.cart.filter(x=>x.shippingType==='cold'),'cold'),cool:cShip(t.cart.filter(x=>x.shippingType==='cool'),'cool')},
-      codFee:cod,isDaibiki:(t.customer?.seikyu==='代引請求'),discount:disc,tax:tax,grandTotal:fin,deliveryTime:dt,deliveryDate:dDate,note:nt
-    }})})
-    .then(r=>r.text())
-    .then(txt=>{
-      console.log('[saveOrder] Phản hồi từ server:', txt);
-      let j=null; try{ j=JSON.parse(txt); }catch(e){}
-      if(j && j.status==='error') alert('Lưu đơn thất bại: '+(j.message||'Không rõ lỗi'));
-    })
-    .catch(err=>{
-      console.error('[saveOrder] Lỗi khi lưu đơn hàng:', err);
-      alert('Lưu đơn thất bại: '+err.message);
-    });
-  }
 }
 
 // ============ SHORTCUTS + INIT ============
