@@ -1557,9 +1557,7 @@ async function handlePrint(){
     if(printBtn){printBtn.disabled=false;printBtn.textContent=printBtnLabel;}
   }
 
-  const now=new Date();
-  const printDate=now.toLocaleDateString('ja-JP');
-  const printTime=now.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+  const printDate=new Date().toLocaleDateString('ja-JP');
 
   const html=`<html><head><title>注文書 - ${c.name}</title><meta charset="UTF-8"><style>
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;margin:0;font-size:8pt;color:#000;background:#f4f4f4}
@@ -1576,16 +1574,19 @@ table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:4p
 .ft{margin-top:14px;width:100%}.ft td{border:1px solid #ddd;padding:6px 10px;font-size:9pt;font-weight:bold}
 .tl{text-align:right;background:#f9f9f9;width:55%}.tq{text-align:center;width:20%;background:#f9f9f9;white-space:nowrap;font-size:9pt}.tv{text-align:right;width:25%;font-size:11pt;font-weight:900}
 .cod td{background:#fff3f3;border-color:#f3c3c3}
-.ns{border:1px solid #ccc;border-radius:4px;overflow:hidden;margin-bottom:10px}
+.ns{border:1px solid #ccc;border-radius:4px;overflow:hidden;margin-bottom:0}
 .ns .lb{font-weight:bold;font-size:9pt;padding:4px 8px;background:#f9f9f9;border-bottom:1px solid #ddd}
 .ns .cnt{padding:5px 8px;white-space:pre-wrap;font-size:9pt}
+.note-row{display:flex;gap:10px;align-items:stretch;margin-bottom:10px}
+.note-row .ns.note-main{flex:1;min-width:0}
+.note-row .ns.note-order{width:110px;flex-shrink:0}
+.note-row .ns.note-order .cnt{text-align:center;font-weight:bold;font-size:11pt}
 @media print{body{background:#fff}#inv{box-shadow:none}.np{display:none}}
 </style></head><body>
 <button class="np" onclick="window.print()" style="padding:10px 20px;font-size:16px;margin:10px;cursor:pointer;">🖨 In Hóa Đơn</button>
 <div id="inv"><h1>注 文 請 書 (小売店専用 / ケース販売)</h1>
 <table class="ht">
 <tr><td class="lb">得意先コード</td><td class="vl">${c.id}</td><td class="lb">日付</td><td class="vl">${printDate}</td></tr>
-<tr><td class="lb">注文番号</td><td class="vl">${orderCode?`<b>#${orderCode}</b>`:'—'}</td><td class="lb">時刻</td><td class="vl">${printTime}</td></tr>
 <tr><td class="lb">会社名</td><td class="vl" colspan="3">${c.name}</td></tr>
 <tr><td class="lb">住所</td><td class="vl" colspan="3">${c.address||''}</td></tr>
 <tr><td colspan="4" class="sep"></td></tr>
@@ -1595,7 +1596,10 @@ ${(dc||dn)?`<tr><td class="lb">納品先コード</td><td class="vl">${dc}</td><
 <tr><td class="lb">営業担当</td><td class="vl">${salesRep}</td><td class="lb">役職</td><td class="vl"></td></tr>
 </table>
 <div style="text-align:center;font-weight:bold;margin:14px 0 8px;font-size:11pt;">明 細</div>
-<div class="ns"><div class="lb">補足事項</div><div class="cnt">${orderNote.replace(/\n/g,'<br>')}</div></div>
+<div class="note-row">
+<div class="ns note-main"><div class="lb">補足事項</div><div class="cnt">${orderNote.replace(/\n/g,'<br>')}</div></div>
+<div class="ns note-order"><div class="lb">注文番号</div><div class="cnt">${orderCode?`#${orderCode}`:'—'}</div></div>
+</div>
 ${allHtml}
 <table class="ft">${codHtml}${discHtml}
 <tr><td class="tl">合 計</td><td class="tq">${allCr.toLocaleString()} ケース</td><td class="tv"><strong>¥${fin.toLocaleString('ja-JP')}</strong><div style="font-size:8pt;font-weight:normal;color:#888;margin-top:2px;">(Đã bao gồm thuế: ¥${tax.toLocaleString('ja-JP')})</div></td></tr>
