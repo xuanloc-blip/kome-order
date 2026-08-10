@@ -1491,6 +1491,9 @@ async function handlePrint(){
   const t=getTab();
   if(!t?.cart.length){alert('Giỏ hàng đang trống!');return;}
   if(!t.customer){alert('Chưa chọn khách hàng!');return;}
+  const w=window.open('','_blank');
+  w.document.write('<html><body style="font-family:sans-serif;padding:40px;text-align:center;color:#888;"><h2>⏳ Đang tạo đơn hàng...</h2><p>Vui lòng đợi trong giây lát</p></body></html>');
+  w.document.close();
   const dm=document.getElementById('delivery-month').value, dd=document.getElementById('delivery-day').value;
   const dt=document.getElementById('delivery-time').value, nt=document.getElementById('order-note').value;
   const dDate=(dm&&dd)?`${dm}/${dd}`:'';
@@ -1568,13 +1571,17 @@ async function handlePrint(){
   if(sheetUrl){
     if(printBtn){printBtn.disabled=true;printBtn.textContent='⏳ Đang tạo bản in...';}
     try{
-      const res=await fetch(sheetUrl,{method:'POST',body:JSON.stringify({action:'saveOrder',data:saveData})});
+      const ctrl=new AbortController();
+      const timeout=setTimeout(()=>ctrl.abort(),20000);
+      const res=await fetch(sheetUrl,{method:'POST',body:JSON.stringify({action:'saveOrder',data:saveData}),signal:ctrl.signal});
+      clearTimeout(timeout);
       const txt=await res.text();
       console.log('[saveOrder] Phản hồi từ server:', txt);
       let j=null; try{ j=JSON.parse(txt); }catch(e){}
       if(!j||j.status==='error'){
         const msg=(j&&j.message)||'Không rõ lỗi';
         if(!confirm('Lưu đơn thất bại: '+msg+'\nBạn có muốn IN đơn (không có mã đơn hàng) không?')){
+          w.close();
           if(printBtn){printBtn.disabled=false;printBtn.textContent=printBtnLabel;}
           return;
         }
@@ -1583,17 +1590,18 @@ async function handlePrint(){
         orderCode=orderId.slice(-3);
       }
     }catch(err){
+      const msg = err.name==='AbortError' ? 'Server phản hồi quá lâu (20s)' : err.message;
       console.error('[saveOrder] Lỗi khi lưu đơn hàng:', err);
-      if(!confirm('Lưu đơn thất bại: '+err.message+'\nBạn có muốn IN đơn (không có mã đơn hàng) không?')){
+      if(!confirm('Lưu đơn thất bại: '+msg+'\nBạn có muốn IN đơn (không có mã đơn hàng) không?')){
+        w.close();
         if(printBtn){printBtn.disabled=false;printBtn.textContent=printBtnLabel;}
         return;
       }
     }
     if(printBtn){printBtn.disabled=false;printBtn.textContent=printBtnLabel;}
   }
-
+  
   const printDate=new Date().toLocaleDateString('ja-JP');
-
   const html=`<html><head><title>注文書 - ${c.name}</title><meta charset="UTF-8"><style>
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;margin:0;font-size:8pt;color:#000;background:#f4f4f4}
 #inv{max-width:1000px;margin:0 auto;padding:10px 12px;background:#fff}
@@ -1635,8 +1643,10 @@ ${allHtml}
 <table class="ft">${codHtml}${discHtml}
 <tr><td class="tl">合 計</td><td class="tq">${allCr.toLocaleString()} ケース</td><td class="tv"><strong>¥${fin.toLocaleString('ja-JP')}</strong><div style="font-size:8pt;font-weight:normal;color:#888;margin-top:2px;">(Đã bao gồm thuế: ¥${tax.toLocaleString('ja-JP')})</div></td></tr>
 </table></div></body></html>`;
-  const w=window.open('','_blank');
-  w.document.write(html);w.document.close();w.focus();
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  w.focus();
   setTimeout(()=>w.print(),150);
 }
 
