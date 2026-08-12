@@ -1376,25 +1376,14 @@ function calcTaxByLine(cart, shipFees, cod, disc0){
   const baseAll=goods8+base10;
   const d10=baseAll>0?Math.round(disc0*base10/baseAll):0;
   const d8=disc0-d10;
-  let tax=0;
-  cart.filter(i=>!TAX10.includes(i.sku)).forEach(i=>{
-    const amt=itemAmt(i), net=goods8>0?amt*(goods8-d8)/goods8:amt;
-    tax+=Math.round(net*8/108);
-  });
-  cart.filter(i=>TAX10.includes(i.sku)).forEach(i=>{
-    const amt=itemAmt(i), net=base10>0?amt*(base10-d10)/base10:amt;
-    tax+=Math.round(net*10/110);
-  });
-  shipFees.forEach(ship=>{
-    if(ship<=0) return;
-    const net=base10>0?ship*(base10-d10)/base10:ship;
-    tax+=Math.round(net*10/110);
-  });
-  if(cod>0){
-    const net=base10>0?cod*(base10-d10)/base10:cod;
-    tax+=Math.round(net*10/110);
-  }
-  return tax;
+
+  const net8 = goods8 - d8;
+  const net10 = base10 - d10;
+
+  const tax8 = Math.floor(net8*8/108);    // 切り捨て — khớp với OBC
+  const tax10 = Math.floor(net10*10/110); // 切り捨て — khớp với OBC
+
+  return tax8+tax10;
 }  
 let pricePopEl=null;
 function closePricePop(){ if(pricePopEl){pricePopEl.remove();pricePopEl=null;} }
