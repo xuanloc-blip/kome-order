@@ -780,6 +780,45 @@ function setStatus(t,m){
   else{el.textContent='● ERR';el.title=m||'エラー';el.className='err';}
 }
 function showLoading(v){ document.getElementById('loading').className=v?'':'hidden'; }
+ // ============ RESERVE ORDER ID (đặt trước mã đơn để in nhanh) ============
+let reservedOrderId = null;
+let reservingId = false;
+
+function todayKeyStr(){
+  const d = new Date();
+  return d.getFullYear() + ('0'+(d.getMonth()+1)).slice(-2) + ('0'+d.getDate()).slice(-2);
+}
+
+async function reserveNextOrderId(){
+  if(!sheetUrl || reservingId) return;
+  reservingId = true;
+  try{
+    const res = await fetch(sheetUrl,{method:'POST',body:JSON.stringify({action:'reserveOrderId'})});
+    const j = JSON.parse(await res.text());
+    if(j && j.status==='ok' && j.orderId){
+      reservedOrderId = j.orderId;
+      console.log('[reserveOrderId] Đã giữ chỗ mã:', reservedOrderId);
+    }
+  }catch(e){ console.warn('[reserveOrderId] Giữ chỗ mã thất bại:', e); }
+  finally{ reservingId = false; }
+}
+
+async function saveOrderInBackground(saveData, attempt){
+  attempt = attempt || 1;
+  try{
+    const res = await fetch(sheetUrl,{method:'POST',body:JSON.stringify({action:'saveOrder',data:saveData})});
+    const j = JSON.parse(await res.text());
+    if(!j || j.status!=='ok') throw new Error((j&&j.message)||'Không rõ lỗi');
+    console.log('[saveOrder] Đã lưu nền OK:', j.orderId);
+  }catch(err){
+    console.error('[saveOrder] Lưu nền thất bại (lần '+attempt+'):', err);
+    if(attempt < 3){
+      setTimeout(function(){ saveOrderInBackground(saveData, attempt+1); }, 3000*attempt);
+    }else{
+      alert('⚠️ LƯU ĐƠN THẤT BẠI sau 3 lần thử!\nMã đơn: '+(saveData.orderId||'(không có)')+'\nĐơn ĐÃ IN nhưng CHƯA được ghi vào Sheet.\nVui lòng kiểm tra mạng và tạo lại đơn này, hoặc báo quản lý nhập tay.\nLỗi: '+err.message);
+    }
+  }
+} 
 function renderOrderHeader(){
   const t=getTab(), c=t?.customer;
   document.getElementById('hdr-customer-input').value=c?c.name:'';
@@ -1491,9 +1530,7 @@ async function handlePrint(){
   const t=getTab();
   if(!t?.cart.length){alert('Giỏ hàng đang trống!');return;}
   if(!t.customer){alert('Chưa chọn khách hàng!');return;}
-  const w=window.open('','_blank');
-  w.document.write('<html><body style="font-family:sans-serif;padding:40px;text-align:center;color:#888;"><h2>⏳ Đang tạo đơn hàng...</h2><p>Vui lòng đợi trong giây lát</p></body></html>');
-  w.document.close();
+
   const dm=document.getElementById('delivery-month').value, dd=document.getElementById('delivery-day').value;
   const dt=document.getElementById('delivery-time').value, nt=document.getElementById('order-note').value;
   const dDate=(dm&&dd)?`${dm}/${dd}`:'';
@@ -1540,8 +1577,28 @@ async function handlePrint(){
   const discHtml=disc>0?`<tr><td class="tl">割引 (Giảm giá)</td><td></td><td class="tv" style="color:#D42D27;">-¥${disc.toLocaleString('ja-JP')}</td></tr>`:'';
   const c=t.customer;
   const salesRep = (currentStaff==='愛華 本田') ? currentStaff : (c.pic||'');
-  
+
+  // === LẤY MÃ ĐƠN ĐÃ GIỮ CHỖ SẴN — KHÔNG CHỜ SERVER ===
+  let orderId='';
+  if(reservedOrderId && reservedOrderId.indexOf(todayKeyStr())===0){
+    orderId = reservedOrderId;
+    reservedOrderId = null;
+  }
+  if(!orderId && sheetUrl){
+    // Trường hợp hiếm: chưa kịp giữ chỗ (app vừa mở đã in ngay) -> chờ nhanh tối đa 5s
+    try{
+      const ctrl=new AbortController();
+      const to=setTimeout(function(){ctrl.abort();},5000);
+      const res=await fetch(sheetUrl,{method:'POST',body:JSON.stringify({action:'reserveOrderId'}),signal:ctrl.signal});
+      clearTimeout(to);
+      const j=JSON.parse(await res.text());
+      if(j&&j.status==='ok'&&j.orderId) orderId=j.orderId;
+    }catch(e){ console.warn('[handlePrint] Không lấy được mã, in không mã:', e); }
+  }
+  const orderCode = orderId ? orderId.slice(-3) : '';
+
   const saveData={
+    orderId:orderId,
     customerId:c.id,customerName:c.name,address:c.address||'',chokuId:dc,chokuName:dn,staff:salesRep,
     items:t.cart.map(it=>{
       const ep=effPrice(it);
@@ -1563,44 +1620,6 @@ async function handlePrint(){
     codFee:cod,isDaibiki:(t.customer?.seikyu==='代引請求'),discount:disc,tax:tax,grandTotal:fin,deliveryTime:dt,deliveryDate:dDate,note:nt
   };
 
-  // Lưu đơn TRƯỚC để lấy 注文番号 thật do Apps Script sinh (LockService đảm bảo không trùng số),
-  // rồi mới in kèm mã đó — tránh in ra một mã "đoán trước" có thể không khớp dữ liệu đã lưu.
-  let orderId='', orderCode='';
-  const printBtn=document.getElementById('btn-print');
-  const printBtnLabel=printBtn?printBtn.textContent:'';
-  if(sheetUrl){
-    if(printBtn){printBtn.disabled=true;printBtn.textContent='⏳ Đang tạo bản in...';}
-    try{
-      const ctrl=new AbortController();
-      const timeout=setTimeout(()=>ctrl.abort(),20000);
-      const res=await fetch(sheetUrl,{method:'POST',body:JSON.stringify({action:'saveOrder',data:saveData}),signal:ctrl.signal});
-      clearTimeout(timeout);
-      const txt=await res.text();
-      console.log('[saveOrder] Phản hồi từ server:', txt);
-      let j=null; try{ j=JSON.parse(txt); }catch(e){}
-      if(!j||j.status==='error'){
-        const msg=(j&&j.message)||'Không rõ lỗi';
-        if(!confirm('Lưu đơn thất bại: '+msg+'\nBạn có muốn IN đơn (không có mã đơn hàng) không?')){
-          w.close();
-          if(printBtn){printBtn.disabled=false;printBtn.textContent=printBtnLabel;}
-          return;
-        }
-      }else{
-        orderId=j.orderId||'';
-        orderCode=orderId.slice(-3);
-      }
-    }catch(err){
-      const msg = err.name==='AbortError' ? 'Server phản hồi quá lâu (20s)' : err.message;
-      console.error('[saveOrder] Lỗi khi lưu đơn hàng:', err);
-      if(!confirm('Lưu đơn thất bại: '+msg+'\nBạn có muốn IN đơn (không có mã đơn hàng) không?')){
-        w.close();
-        if(printBtn){printBtn.disabled=false;printBtn.textContent=printBtnLabel;}
-        return;
-      }
-    }
-    if(printBtn){printBtn.disabled=false;printBtn.textContent=printBtnLabel;}
-  }
-  
   const printDate=new Date().toLocaleDateString('ja-JP');
   const html=`<html><head><title>注文書 - ${c.name}</title><meta charset="UTF-8"><style>
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;margin:0;font-size:8pt;color:#000;background:#f4f4f4}
@@ -1643,11 +1662,17 @@ ${allHtml}
 <table class="ft">${codHtml}${discHtml}
 <tr><td class="tl">合 計</td><td class="tq">${allCr.toLocaleString()} ケース</td><td class="tv"><strong>¥${fin.toLocaleString('ja-JP')}</strong><div style="font-size:8pt;font-weight:normal;color:#888;margin-top:2px;">(Đã bao gồm thuế: ¥${tax.toLocaleString('ja-JP')})</div></td></tr>
 </table></div></body></html>`;
-  w.document.open();
+
+  // === IN NGAY LẬP TỨC — KHÔNG CHỜ LƯU SHEET ===
+  const w=window.open('','_blank');
   w.document.write(html);
   w.document.close();
   w.focus();
   setTimeout(()=>w.print(),150);
+
+  // === LƯU SHEET CHẠY NỀN + GIỮ CHỖ MÃ CHO ĐƠN TIẾP THEO ===
+  if(sheetUrl && orderId) saveOrderInBackground(saveData);
+  reserveNextOrderId();
 }
 
 // ============ SHORTCUTS + INIT ============
@@ -1664,7 +1689,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   updateStaffChip();
   if(currentStaff) document.getElementById('staff-screen').classList.add('hidden');
   newTab();
-  if(sheetUrl) loadData(); else openSettings();
+  if(sheetUrl){ loadData(); reserveNextOrderId(); } else openSettings();
 });
 </script>
 </body>
