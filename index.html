@@ -91,7 +91,9 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 /* Col 1: Products */
 #col-products { display: flex; flex-direction: column; background: var(--white); border-right: 1px solid var(--gray4); min-width: 0; min-height: 0; }
 #product-search-bar { padding: 10px 12px; border-bottom: 2px solid var(--yellow); display: flex; gap: 8px; background: var(--yellow-light); }
-#product-search-input { flex: 1; padding: 8px 12px; border: 1px solid var(--gray4); border-radius: 8px; font-size: 13px; outline: none; }
+#product-search-wrap { flex: 1; position: relative; display: flex; align-items: center; }
+#product-search-wrap .icon { position: absolute; left: 12px; color: var(--gray3); pointer-events: none; }
+#product-search-input { flex: 1; padding: 8px 12px 8px 34px; border: 1px solid var(--gray4); border-radius: 8px; font-size: 13px; outline: none; }
 #product-search-input:focus { border-color: var(--red); }
 #cat-filter { display: flex; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--gray5); overflow-x: auto; scrollbar-width: none; flex-shrink: 0; align-items: center; }
 #sort-wrap { margin-left: auto; flex-shrink: 0; display: flex; align-items: center; gap: 5px; }
@@ -378,7 +380,10 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
   <!-- COL 1: PRODUCTS -->
   <div id="col-products">
     <div id="product-search-bar">
-      <input id="product-search-input" placeholder="🔍 Tìm theo SKU, tên Việt hoặc tên Nhật... (F3)" autocomplete="off">
+      <div id="product-search-wrap">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input id="product-search-input" placeholder="Tìm theo SKU, tên Việt hoặc tên Nhật... (F3)" autocomplete="off">
+      </div>
     </div>
     <div id="cat-filter"></div>
     <div id="product-grid"></div>
@@ -1306,7 +1311,7 @@ function renderChokuDd(q){
   }
   items=items.slice(0,30);
   if(!items.length){ chokuDd.classList.remove('show'); return; }
-  chokuDd.innerHTML=items.map((x,i)=>`<div class="choku-item" data-idx="${i}" onclick="selectChoku('${x.code}')"><div class="ci-name">📍 ${x.name} <span style="color:var(--gray3);font-weight:400;">(${x.code})</span>${x.customerCode?` <span style="color:var(--gray3);font-weight:400;">得意先:${x.customerCode}</span>`:''}</div><div class="ci-addr">〒${x.post} ${x.pref}${x.city}${x.add1} ${x.add2}</div></div>`).join('');
+  chokuDd.innerHTML=items.map((x,i)=>`<div class="choku-item" data-idx="${i}" onclick="selectChoku('${x.code}')"><div class="ci-name"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> ${x.name} <span style="color:var(--gray3);font-weight:400;">(${x.code})</span>${x.customerCode?` <span style="color:var(--gray3);font-weight:400;">得意先:${x.customerCode}</span>`:''}</div><div class="ci-addr">〒${x.post} ${x.pref}${x.city}${x.add1} ${x.add2}</div></div>`).join('');
   chokuDdIdx=-1;
   chokuDd.classList.add('show');
   }
