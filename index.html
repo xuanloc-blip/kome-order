@@ -67,8 +67,14 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 #tabs-bar { display: flex; align-items: flex-end; gap: 4px; flex: 1; overflow-x: auto; scrollbar-width: none; height: 100%; padding-top: 10px; }
 #tabs-bar::-webkit-scrollbar { display: none; }
 #today-stats { display: flex; gap: 8px; flex-shrink: 0; margin-left: 8px; }
-.stat-chip { background: rgba(255,255,255,.15); border: 1px solid var(--yellow); color: #fff; border-radius: 16px; padding: 5px 12px; font-size: 11px; font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+.stat-chip { position: relative; background: rgba(255,255,255,.15); border: 1px solid var(--yellow); color: #fff; border-radius: 16px; padding: 5px 12px; font-size: 11px; font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
 .stat-chip b { color: #ffe27a; font-size: 12px; }
+#stat-tooltip { display: none; position: absolute; top: calc(100% + 9px); left: 0; z-index: 60; background: var(--white); color: var(--gray1); border: 1px solid var(--gray4); border-radius: 10px; box-shadow: 0 8px 20px rgba(0,0,0,.2); padding: 10px 14px; font-size: 12px; font-weight: 600; white-space: nowrap; text-align: left; }
+#stat-tooltip.show { display: block; }
+#stat-tooltip::before { content: ""; position: absolute; top: -6px; left: 16px; width: 10px; height: 10px; background: var(--white); border-left: 1px solid var(--gray4); border-top: 1px solid var(--gray4); transform: rotate(45deg); }
+#stat-tooltip .tip-row { display: flex; align-items: center; gap: 6px; }
+#stat-tooltip .tip-row + .tip-row { margin-top: 5px; }
+#stat-tooltip .tip-row b { color: var(--red-dark); font-size: 12px; }
 .tab-item { display: flex; align-items: center; gap: 6px; padding: 7px 12px; background: rgba(255,255,255,.18); color: #fff; border-radius: 8px 8px 0 0; cursor: pointer; white-space: nowrap; font-size: 12px; font-weight: 600; min-width: 100px; max-width: 170px; height: 34px; }
 .tab-item.active { background: #f7f3ec; color: var(--red-dark); }
 .tab-close { font-size: 15px; opacity: .6; }
@@ -360,7 +366,12 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 
   <div id="tabs-bar"></div>
   <div id="today-stats">
-    <div class="stat-chip"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg> <b id="stat-order-count">--</b> đơn hôm nay</div>
+    <div class="stat-chip" onmouseenter="showStatTooltip()" onmouseleave="hideStatTooltip()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg> <b id="stat-order-count">--</b> đơn hôm nay
+      <div id="stat-tooltip">
+        <div class="tip-row">Đơn chưa nhập: <b id="tip-unentered-count">--</b></div>
+        <div class="tip-row">Doanh thu chưa nhập: <b id="tip-unentered-revenue">--</b></div>
+      </div>
+    </div>
     <div class="stat-chip"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 3H8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2z"></path><circle cx="16" cy="14" r="2"></circle></svg> <b id="stat-revenue">--</b></div>
   </div>
   <div id="topbar-right">
@@ -829,6 +840,7 @@ async function reserveNextOrderId(){
 }
 
 // ============ SO LIEU HOM NAY (don + doanh thu, theo thoi gian thuc) ============
+let lastUnenteredCount=null, lastUnenteredRevenue=null;
 async function loadTodayStats(){
   if(!sheetUrl) return;
   try{
@@ -838,9 +850,18 @@ async function loadTodayStats(){
       const d=j.data||{};
       document.getElementById('stat-order-count').textContent=(d.orderCount||0).toLocaleString('ja-JP');
       document.getElementById('stat-revenue').textContent='¥'+(d.revenue||0).toLocaleString('ja-JP');
+      lastUnenteredCount = typeof d.unenteredCount==='number' ? d.unenteredCount : null;
+      lastUnenteredRevenue = typeof d.unenteredRevenue==='number' ? d.unenteredRevenue : null;
+      updateStatTooltip();
     }
   }catch(e){ console.warn('[loadTodayStats] Không tải được số liệu hôm nay:', e); }
 }
+function updateStatTooltip(){
+  document.getElementById('tip-unentered-count').textContent = lastUnenteredCount===null ? '--' : lastUnenteredCount.toLocaleString('ja-JP');
+  document.getElementById('tip-unentered-revenue').textContent = lastUnenteredRevenue===null ? '--' : '¥'+lastUnenteredRevenue.toLocaleString('ja-JP');
+}
+function showStatTooltip(){ updateStatTooltip(); document.getElementById('stat-tooltip').classList.add('show'); }
+function hideStatTooltip(){ document.getElementById('stat-tooltip').classList.remove('show'); }
 let todayStatsTimer=null;
 function startTodayStatsPolling(){
   loadTodayStats();
