@@ -192,6 +192,10 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival { display: none
 .cr-name { flex: 1; min-width: 0; }
 .cr-name strong { font-size: 12px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cr-name small { font-size: 10px; color: var(--gray3); }
+.cr-margin { font-size: 10px; font-weight: 700; margin-left: 6px; }
+.cr-margin-good { color: var(--green); }
+.cr-margin-warn { color: var(--orange); }
+.cr-margin-bad { color: var(--red); }
 .cart-disc { width: 54px; padding: 2px 4px; border: 1px solid #f0c0bd; border-radius: 4px; font-size: 11px; text-align: right; background: var(--red-light); }
 .qty-ctrl { display: flex; align-items: center; gap: 2px; background: var(--gray5); border-radius: 20px; padding: 3px; flex-shrink: 0; }
 .qty-btn { width: 22px; height: 22px; border: none; border-radius: 50%; background: var(--white); cursor: pointer; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: var(--gray2); box-shadow: 0 1px 2px rgba(0,0,0,.15); flex-shrink: 0; }
@@ -1538,6 +1542,22 @@ function openPricePop(sku,ev){
   });
 }
 document.addEventListener('click',e=>{ if(pricePopEl&&!e.target.closest('#price-pop')) closePricePop(); });
+// Tinh lai ti suat loi nhuan THEO GIA BAN HIEN TAI (khong dung % co san trong
+// sheet, vi gia se doi khi sale chinh sua tren web) = (gia ban - gia von) / gia ban.
+// gia von (costPrice) lay tu sheet 単価 qua Apps Script; khong co thi khong hien gi ca.
+function calcMarginPct(sku, priceForCase){
+  const p=productData.find(x=>x.sku===sku);
+  if(!p) return null;
+  const cost=parseFloat(String(p.costPrice||'').replace(/,/g,''));
+  if(!cost||cost<=0||!priceForCase||priceForCase<=0) return null;
+  const pct=(1-cost/priceForCase)*100;
+  return Math.round(pct*10)/10;
+}
+function marginClass(pct){
+  if(pct<5) return 'cr-margin-bad';
+  if(pct<20) return 'cr-margin-warn';
+  return 'cr-margin-good';
+}
 function renderCart(){
   const t=getTab();
   const cartEl=document.getElementById('cart-items'), sumEl=document.getElementById('summary');
@@ -1553,7 +1573,9 @@ function renderCart(){
       const ep=effPrice(it);
       const tot=Math.round(it.isXot?ep*(it.qty/0.25):ep*it.qty);
       sub+=tot;crates+=it.qty;
-      cartHtml+=`<div class="cart-row"><div class="cr-name"><strong>${it.name}</strong><small>${it.sku}</small></div>
+      const marginPct=calcMarginPct(it.sku, it.isXot?ep*4:ep);
+      const marginHtml=marginPct===null?'':`<span class="cr-margin ${marginClass(marginPct)}">Lãi: ${marginPct}%</span>`;
+      cartHtml+=`<div class="cart-row"><div class="cr-name"><strong>${it.name}</strong><small>${it.sku}</small>${marginHtml}</div>
         <div class="qty-ctrl"><button class="qty-btn" onclick="chgQty('${it.sku}',-1)">−</button><input type="number" class="qty-input" value="${it.qty}" min="${it.isXot?0.25:1}" step="${it.isXot?0.25:1}" onclick="this.select()" onkeydown="if(event.key==='Enter')this.blur()" onchange="setQty('${it.sku}',this.value)"><button class="qty-btn" onclick="chgQty('${it.sku}',1)">+</button></div>
         <span class="cart-price${(it.discount||0)!==0?' discounted':''}" onclick="openPricePop('${it.sku}',event)" title="Bấm để chỉnh giá">¥${effPrice(it).toLocaleString('ja-JP')}</span>
         <span class="cart-total">¥${tot.toLocaleString('ja-JP')}</span><span class="cart-del" onclick="delItem('${it.sku}')">×</span></div>`;
