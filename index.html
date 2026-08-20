@@ -83,6 +83,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 #connection-status.err { color: #ffcdd2; }
 .tb-btn { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,.18); color: #fff; border: none; border-radius: 8px; padding: 0; cursor: pointer; font-size: 15px; line-height: 1; flex-shrink: 0; }
 .tb-btn:hover { background: rgba(255,255,255,.3); }
+.icon { width: 1em; height: 1em; display: inline-block; vertical-align: -0.15em; flex-shrink: 0; }
 
 /* ===== 3-COLUMN LAYOUT ===== */
 #main { display: grid; grid-template-columns: 1fr 420px; height: calc(100vh - 56px); }
@@ -314,7 +315,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 <div id="loading" class="hidden"><div class="spinner"></div></div>
 <div id="settings-modal" class="hidden">
   <div class="modal">
-    <h2>⚙️ Cài đặt kết nối</h2>
+    <h2><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Cài đặt kết nối</h2>
     <label>Google Apps Script URL</label>
     <input id="setting-url" placeholder="https://script.google.com/macros/s/...">
     <div class="modal-btns">
@@ -342,7 +343,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 
 <div id="oos-modal" class="hidden">
   <div class="modal" style="width:380px;">
-    <h2>⚠️ Sản phẩm đã hết hàng</h2>
+    <h2><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> Sản phẩm đã hết hàng</h2>
     <p id="oos-modal-text" style="font-size:13px;color:var(--gray2);line-height:1.6;margin-bottom:18px;"></p>
     <div class="modal-btns">
       <button class="btn-primary" onclick="confirmOOSAdd()">Vẫn thêm vào đơn</button>
@@ -357,8 +358,8 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 
   <div id="tabs-bar"></div>
   <div id="today-stats">
-    <div class="stat-chip">📦 <b id="stat-order-count">--</b> đơn hôm nay</div>
-    <div class="stat-chip">💰 <b id="stat-revenue">--</b></div>
+    <div class="stat-chip"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg> <b id="stat-order-count">--</b> đơn hôm nay</div>
+    <div class="stat-chip"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 3H8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2z"></path><circle cx="16" cy="14" r="2"></circle></svg> <b id="stat-revenue">--</b></div>
   </div>
   <div id="topbar-right">
     <div id="staff-chip" onclick="showStaffScreen()" title="Đổi người lên đơn">
@@ -366,9 +367,9 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
       <span id="staff-chip-name">Chưa chọn</span>
     </div>
     <span id="connection-status">●</span>
-    <button class="tb-btn" onclick="reloadData()" title="Tải lại dữ liệu">↻</button>
+    <button class="tb-btn" onclick="reloadData()" title="Tải lại dữ liệu"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></button>
     <button class="tb-btn" onclick="openOrderHistory()" title="Lịch sử đơn hàng">≡</button>
-    <button class="tb-btn" onclick="openSettings()" title="Cài đặt">⚙</button>
+    <button class="tb-btn" onclick="openSettings()" title="Cài đặt"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
   </div>
 </div>
 
@@ -388,8 +389,8 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
     <div id="order-header">
      <div class="of"><label>Mã KH</label>
         <div id="cust-id-wrap"><input id="hdr-id-input" class="of-val-input" placeholder="Nhập hoặc tìm mã KH (F4)..." autocomplete="off" oninput="onCustIdInput()" onfocus="onCustIdInput()"><div id="cust-id-dd"></div></div>
-        <button id="btn-cust-info" onclick="toggleCustInfo()">👤 Liên hệ</button>
-        <button id="btn-new-cust" onclick="startNewCustomer()" title="Thêm khách mới">➕</button>
+        <button id="btn-cust-info" onclick="toggleCustInfo()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> Liên hệ</button>
+        <button id="btn-new-cust" onclick="startNewCustomer()" title="Thêm khách mới"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
       </div>
       <div class="of"><label>Khách</label><input id="hdr-customer-input" class="of-val-input" placeholder="Tên khách hàng..." oninput="onCustNameInput()"></div>
       <div class="of"><label>直送先</label>
@@ -408,14 +409,14 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
     </div>
     <div id="paste-order-box">
   <div id="paste-order-head" onclick="togglePasteOrder()">
-    <span><span class="poh-icon">📋</span>Dán đơn hàng nhanh (từ tin nhắn)</span>
+    <span><span class="poh-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg></span>Dán đơn hàng nhanh (từ tin nhắn)</span>
     <span id="paste-order-toggle-icon">▾</span>
   </div>
   <div id="paste-order-body">
     <div class="paste-order-inner"><div class="paste-order-inner-pad">
       <textarea id="paste-order-textarea" placeholder="Dán nội dung, ví dụ:&#10;- [BS02] - Bia Saigon Lager - ¥4.248&#10;Số lượng: 1 thùng"></textarea>
       <div class="paste-order-actions">
-        <button id="btn-do-paste-order" onclick="handlePasteOrder()">➕ Đưa vào giỏ hàng</button>
+        <button id="btn-do-paste-order" onclick="handlePasteOrder()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Đưa vào giỏ hàng</button>
         <label><input type="checkbox" id="paste-order-replace"> Thay thế giỏ hàng hiện tại</label>
       </div>
     </div></div>
@@ -425,13 +426,13 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
     <div id="summary"></div>
     <div id="bottom-bar">
       <div id="disc-wrap"><label>割引</label><input type="number" id="disc-input" min="0" step="100" value="0"><span style="font-size:11px;color:var(--gray3);">¥</span></div>
-      <button id="btn-print" onclick="handlePrint()">🖨 Tạo & In Đơn hàng</button>
+      <button id="btn-print" onclick="handlePrint()"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg> Tạo & In Đơn hàng</button>
     </div>
   </div>
 
   <!-- COL 3: CUSTOMER INFO + MESSENGER -->
   <div id="col-chat">
-    <div id="chat-header">💬 Khách hàng & Messenger <button id="chat-close" onclick="toggleCustInfo(false)">✕</button></div>
+    <div id="chat-header"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg> Khách hàng & Messenger <button id="chat-close" onclick="toggleCustInfo(false)">✕</button></div>
     <div id="chat-body">
       <div class="chat-note">← Chọn khách hàng để xem thông tin và mở chat Messenger</div>
     </div>
@@ -458,6 +459,13 @@ let currentPage=1, filteredProducts=[], currentCat='all', currentSort='default';
 let tabs=[], activeTabId=null, tabCounter=0;
 let msgWindow=null;
 let custDdIdx=-1, chokuDdIdx=-1;
+
+// ============ ICON SVG (dung lai trong cac template string) ============
+const ICO_PRINT='<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>';
+const ICO_EDIT='<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
+const ICO_TRASH='<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+const ICO_CHECK='<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+const ICO_MSG='<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>';
 
 // ============ STAFF SELECT ============
 function renderStaffScreen(){
@@ -676,9 +684,9 @@ function renderHistoryDetail(o){
     </div>
     <table class="history-items"><thead><tr><th style="width:110px;">Mã hàng</th><th>Sản phẩm</th><th style="width:60px;">SL</th><th style="width:90px;">Đơn giá</th><th style="width:100px;">Thành tiền</th></tr></thead><tbody>${itemRows}</tbody></table>
     <div style="display:flex;gap:8px;margin-top:12px;">
-      <button class="btn-primary" style="flex:0 0 auto;" onclick="event.stopPropagation();reprintHistoryOrder('${jsString(o.orderId)}')">🖨 In lại</button>
-      <button class="btn-ghost" onclick="event.stopPropagation();editHistoryOrder('${jsString(o.orderId)}')">✏️ Chỉnh sửa</button>
-      <button class="btn-ghost" style="color:var(--red);" onclick="event.stopPropagation();cancelHistoryOrder('${jsString(o.orderId)}')">🗑 Hủy đơn</button>
+      <button class="btn-primary" style="flex:0 0 auto;" onclick="event.stopPropagation();reprintHistoryOrder('${jsString(o.orderId)}')">${ICO_PRINT} In lại</button>
+      <button class="btn-ghost" onclick="event.stopPropagation();editHistoryOrder('${jsString(o.orderId)}')">${ICO_EDIT} Chỉnh sửa</button>
+      <button class="btn-ghost" style="color:var(--red);" onclick="event.stopPropagation();cancelHistoryOrder('${jsString(o.orderId)}')">${ICO_TRASH} Hủy đơn</button>
     </div>
   </div>`;
 }
@@ -1003,7 +1011,7 @@ function renderChatPanel(){
         </div>
         <div class="ir"><label>Rank</label><input class="of-val-input" value="${escapeHtml(c.rank||'')}" placeholder="Rank" onchange="updManualCust('rank',this.value.trim())"></div>
       </div>
-      <button class="btn-primary" style="width:100%;margin-bottom:8px;" onclick="confirmManualCust()">✔ Xác nhận</button>
+      <button class="btn-primary" style="width:100%;margin-bottom:8px;" onclick="confirmManualCust()">${ICO_CHECK} Xác nhận</button>
       <div class="chat-note">ℹ️ Thông tin nhập ở đây dùng ngay cho đơn hàng và bản in. Sau này thêm khách vào Google Sheet để lưu vĩnh viễn.</div>`;
     return;
   }
@@ -1021,7 +1029,7 @@ function renderChatPanel(){
       <div class="ir"><label>Thanh toán</label><span>${escapeHtml(c.seikyu||'―')}</span></div>
       <div class="ir"><label>Rank</label><span>${escapeHtml(c.rank||'―')}</span></div>
     </div>
-    ${hasMsg?`<button class="msg-btn" onclick="openMessenger('${msgUrl}')">💬 Mở chat Messenger</button>
+    ${hasMsg?`<button class="msg-btn" onclick="openMessenger('${msgUrl}')">${ICO_MSG} Mở chat Messenger</button>
     <button class="msg-btn secondary" onclick="openMessengerSide('${msgUrl}')">⧉ Mở cạnh màn hình</button>`:''}
     ${tags.length?`<div class="info-card"><h4>Tags</h4>${tags.map(x=>`<span class="tag-chip">${escapeHtml(x)}</span>`).join('')}</div>`:''}
     ${notes.length?`<div class="info-card"><h4>Ghi chú gần đây</h4>${notes.map(n=>`<div class="note-item">${escapeHtml(n.text||'')}<div class="nd">${escapeHtml(n.date||'')}</div></div>`).join('')}</div>`:''}
