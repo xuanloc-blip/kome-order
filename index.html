@@ -89,6 +89,8 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 #connection-status.err { color: #ffcdd2; }
 .tb-btn { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,.18); color: #fff; border: none; border-radius: 8px; padding: 0; cursor: pointer; font-size: 15px; line-height: 1; flex-shrink: 0; }
 .tb-btn:hover { background: rgba(255,255,255,.3); }
+.tb-btn.active { background: var(--yellow); color: var(--red-dark); }
+body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival { display: none; }
 .icon { width: 1em; height: 1em; display: inline-block; vertical-align: -0.15em; flex-shrink: 0; }
 
 /* ===== 3-COLUMN LAYOUT ===== */
@@ -382,6 +384,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
     <span id="connection-status">●</span>
     <button class="tb-btn" onclick="reloadData()" title="Tải lại dữ liệu"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></button>
     <button class="tb-btn" onclick="openOrderHistory()" title="Lịch sử đơn hàng">≡</button>
+    <button class="tb-btn" id="btn-toggle-stock" onclick="toggleStockInfoVisibility()" title="Ẩn/hiện tồn kho & hàng về"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
     <button class="tb-btn" onclick="openSettings()" title="Cài đặt"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
   </div>
 </div>
@@ -457,7 +460,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 
 <script>
 // ============ CONFIG ============
-const SHEET_URL_KEY='kome_sheet_url', CACHE_KEY='kome_data_cache_v3', STAFF_KEY='kome_staff';
+const SHEET_URL_KEY='kome_sheet_url', CACHE_KEY='kome_data_cache_v3', STAFF_KEY='kome_staff', STOCK_INFO_HIDDEN_KEY='kome_stock_info_hidden';
 const CACHE_TTL=15*60*1000, RENDER_CHUNK=40;
 const TAX10=['BS01','BS02','BS04','BS06','HAB05','HAB06','HAL02','HAL03','HAL08','HAL11','LD01','LD02','RV01','RV02','RV03','RV05','RV06','RV07','RV09'];
 const STAFF_LIST=[
@@ -482,6 +485,22 @@ const ICO_EDIT='<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="curren
 const ICO_TRASH='<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
 const ICO_CHECK='<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
 const ICO_MSG='<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>';
+const ICO_EYE='<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+const ICO_EYE_OFF='<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+
+// ============ AN/HIEN TON KHO & HANG VE (icon con mat canh nut cai dat) ============
+function applyStockInfoVisibility(hidden){
+  document.body.classList.toggle('hide-stock-info', hidden);
+  const btn=document.getElementById('btn-toggle-stock');
+  btn.innerHTML = hidden ? ICO_EYE_OFF : ICO_EYE;
+  btn.classList.toggle('active', hidden);
+  btn.title = hidden ? 'Đang ẩn tồn kho & hàng về (bấm để hiện)' : 'Ẩn/hiện tồn kho & hàng về';
+}
+function toggleStockInfoVisibility(){
+  const hidden = !document.body.classList.contains('hide-stock-info');
+  localStorage.setItem(STOCK_INFO_HIDDEN_KEY, hidden ? '1' : '0');
+  applyStockInfoVisibility(hidden);
+}
 
 // ============ STAFF SELECT ============
 function renderStaffScreen(){
@@ -1593,7 +1612,7 @@ function checkXotQtyIntegrity(cart){
   const rounded=Math.round(total*100)/100;
   if(Math.abs(rounded-Math.round(rounded))>1e-9){
     const detail=xotItems.map(i=>`${i.sku} (${i.qty})`).join(', ');
-    return `Không thể tạo đơn hàng do các mặt hàng xốt đang bị lẻ!\n\nTổng số lượng xốt hiện tại: ${rounded} \nChi tiết: ${detail}\n\nVui lòng điều chỉnh số lượng trước khi in.`;
+    return `Không thể tạo đơn hàng do các mặt hàng xốt đang bị lẻ!\n\nTổng số lượng xốt hiện tại: ${rounded} (cần là số nguyên, vd 1, 2, 3...).\nChi tiết: ${detail}\n\nVui lòng điều chỉnh số lượng (cộng dồn các mã xốt lại cho đủ số nguyên) trước khi in.`;
   }
   return null;
 }
@@ -1629,7 +1648,9 @@ async function handlePrint(){
       const dp=it.isXot?ep*4:ep, dop=it.isXot?it.originalPrice*4:it.originalPrice;
       let pc=`¥${dp.toLocaleString('ja-JP')}`;
       if(dp<dop)pc+=`<br><small style="text-decoration:line-through;color:#999;">(¥${dop.toLocaleString('ja-JP')})</small>`;
-      rows+=`<tr><td style="text-align:center;color:#666;">${rn}</td><td>${it.sku}</td><td>${it.name}<br><small>${it.nameJP}</small></td><td style="text-align:right;">${it.qty}</td><td>${pc}</td><td style="text-align:right;">¥${tot.toLocaleString('ja-JP')}</td></tr>`;
+      const pInfo=productData.find(x=>x.sku===it.sku);
+      const packsize=pInfo?String(fieldVal(pInfo,'packsize')||'').trim():'';
+      rows+=`<tr><td style="text-align:center;color:#666;">${rn}</td><td>${it.sku}</td><td>${it.name}<br><small>${it.nameJP}${packsize?' <span style="color:#888;">('+packsize+')</span>':''}</small></td><td style="text-align:right;">${it.qty}</td><td>${pc}</td><td style="text-align:right;">¥${tot.toLocaleString('ja-JP')}</td></tr>`;
     });
     const ship=cShip(items,g.key), gt=sub+ship;
     grand+=gt;allCr+=cr;shipFeesArr.push(ship);
@@ -1760,6 +1781,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   for(let i=1;i<=31;i++){const o=document.createElement('option');o.textContent=i;ds.appendChild(o);}
   renderStaffScreen();
   updateStaffChip();
+  applyStockInfoVisibility(localStorage.getItem(STOCK_INFO_HIDDEN_KEY)==='1');
   if(currentStaff) document.getElementById('staff-screen').classList.add('hidden');
   newTab();
   if(sheetUrl){ loadData(); reserveNextOrderId(); startTodayStatsPolling(); } else openSettings();
