@@ -1593,7 +1593,7 @@ function checkXotQtyIntegrity(cart){
   const rounded=Math.round(total*100)/100;
   if(Math.abs(rounded-Math.round(rounded))>1e-9){
     const detail=xotItems.map(i=>`${i.sku} (${i.qty})`).join(', ');
-    return `Không thể tạo đơn hàng do các mặt hàng xốt đang bị lẻ!\n\nTổng số lượng xốt hiện tại: ${rounded} (cần là số nguyên, vd 1, 2, 3...).\nChi tiết: ${detail}\n\nVui lòng điều chỉnh số lượng (cộng dồn các mã xốt lại cho đủ số nguyên) trước khi in.`;
+    return `Không thể tạo đơn hàng do các mặt hàng xốt đang bị lẻ!\n\nTổng số lượng xốt hiện tại: ${rounded} \nChi tiết: ${detail}\n\nVui lòng điều chỉnh số lượng trước khi in.`;
   }
   return null;
 }
