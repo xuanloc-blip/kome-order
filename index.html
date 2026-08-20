@@ -949,7 +949,7 @@ function applyCustomerFromInputs(){
     const prev=(t.customer&&t.customer.manual)?t.customer:{};
     t.customer={
       id:idVal, name:nameVal||'(Khách mới)',
-      address:prev.address||'',chokuText:prev.chokuText||'', pic:prev.pic||'', seikyu:prev.seikyu||'',
+      address:prev.address||'',chokuText:prev.chokuText||'', pic:prev.pic||currentStaff||'', seikyu:prev.seikyu||'',
       rank:prev.rank||'', tags:prev.tags||'', notes:prev.notes||[],
       urlKey:null, manual:true
     };
@@ -975,7 +975,9 @@ function updManualCust(field,value){
 function confirmManualCust(){
   const t=getTab(); if(!t||!t.customer||!t.customer.manual) return;
   const c=t.customer;
-  if(!c.name){ alert('Vui lòng nhập tên khách hàng!'); return; }
+  if(!c.id){ alert('Vui lòng nhập Mã KH!'); return; }
+  if(!c.address){ alert('Vui lòng nhập Địa chỉ!'); return; }
+  if(!c.seikyu){ alert('Vui lòng chọn Thanh toán!'); return; }
   if(!c.name||c.name==='(Khách mới)') c.name='(Khách mới)';
   // Đổ về các ô trên đơn hàng
   document.getElementById('hdr-id-input').value=c.id||'';
@@ -987,7 +989,7 @@ function confirmManualCust(){
 }
 function startNewCustomer(){
   let t=getTab(); if(!t){ newTab(); t=getTab(); }
-  t.customer={ id:'', name:'', address:'', chokuText:'', pic:'', seikyu:'',
+  t.customer={ id:'', name:'', address:'', chokuText:'', pic:currentStaff||'', seikyu:'',
     rank:'', tags:'', notes:[], urlKey:null, manual:true };
   document.getElementById('hdr-id-input').value='';
   document.getElementById('hdr-customer-input').value='';
@@ -1002,19 +1004,18 @@ function renderChatPanel(){
     body.innerHTML=`
       <div class="info-card">
         <h4>Khách mới - Nhập thông tin <span style="color:var(--red);">(sẽ in lên đơn)</span></h4>
-        <div class="ir"><label>Mã KH</label><input class="of-val-input" value="${escapeHtml(c.id)}" onchange="updManualCust('id',this.value.trim());document.getElementById('hdr-id-input').value=this.value.trim();"></div>
+        <div class="ir"><label>Mã KH *</label><input class="of-val-input" value="${escapeHtml(c.id)}" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onpaste="setTimeout(()=>{this.value=this.value.replace(/[^0-9]/g,'');},0)" onchange="updManualCust('id',this.value.trim());document.getElementById('hdr-id-input').value=this.value.trim();"></div>
         <div class="ir"><label>Tên</label><input class="of-val-input" value="${escapeHtml(c.name==='(Khách mới)'?'':c.name)}" placeholder="Tên khách hàng" onchange="updManualCust('name',this.value.trim())"></div>
-        <div class="ir"><label>Địa chỉ</label><input class="of-val-input" value="${escapeHtml(c.address||'')}" placeholder="Địa chỉ" onchange="updManualCust('address',this.value.trim())"></div>
-        <div class="ir"><label>直送先</label><input class="of-val-input" value="${escapeHtml(c.chokuText||'')}" placeholder="Tên/Mã 直送先 " onchange="updManualCust('chokuText',this.value.trim())"></div>
-        <div class="ir"><label>Phụ trách</label><input class="of-val-input" value="${escapeHtml(c.pic||'')}" placeholder="担当者" onchange="updManualCust('pic',this.value.trim())"></div>
-        <div class="ir"><label>Thanh toán</label>
+        <div class="ir"><label>Địa chỉ *</label><input class="of-val-input" value="${escapeHtml(c.address||'')}" placeholder="Địa chỉ" onchange="updManualCust('address',this.value.trim())"></div>
+        <div class="ir"><label>直送先</label><input class="of-val-input" value="${escapeHtml(c.chokuText||'')}" placeholder="Mã 直送先 (chỉ số)" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onpaste="setTimeout(()=>{this.value=this.value.replace(/[^0-9]/g,'');},0)" onchange="updManualCust('chokuText',this.value.trim())"></div>
+        <div class="ir"><label>Phụ trách</label><span>${escapeHtml(c.pic||currentStaff||'―')}</span></div>
+        <div class="ir"><label>Thanh toán *</label>
           <select class="of-val-input" onchange="updManualCust('seikyu',this.value)">
             <option value=""${!c.seikyu?' selected':''}>--</option>
             <option value="代引請求"${c.seikyu==='代引請求'?' selected':''}>代引請求</option>
             <option value="掛売"${c.seikyu==='掛売'?' selected':''}>掛売</option>
           </select>
         </div>
-        <div class="ir"><label>Rank</label><input class="of-val-input" value="${escapeHtml(c.rank||'')}" placeholder="Rank" onchange="updManualCust('rank',this.value.trim())"></div>
       </div>
       <button class="btn-primary" style="width:100%;margin-bottom:8px;" onclick="confirmManualCust()">${ICO_CHECK} Xác nhận</button>
       <div class="chat-note">ℹ️ Thông tin nhập ở đây dùng ngay cho đơn hàng và bản in. Sau này thêm khách vào Google Sheet để lưu vĩnh viễn.</div>`;
