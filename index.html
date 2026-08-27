@@ -309,8 +309,6 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
 .pp-tabs { display: flex; gap: 4px; margin-bottom: 8px; border-bottom: 1px solid var(--gray5); padding-bottom: 6px; }
 .pp-tab-btn { flex: 1; border: none; background: var(--gray5); color: var(--gray2); font-size: 10px; font-weight: 700; padding: 5px 2px; border-radius: 6px; cursor: pointer; }
 .pp-tab-btn.active { background: var(--red); color: #fff; }
-.pp-bulk-preview { font-size: 10px; color: var(--gray3); line-height: 1.5; margin-top: 6px; max-height: 90px; overflow-y: auto; }
-.pp-bulk-preview b { color: var(--gray1); }
 #price-pop .pp-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 #price-pop .pp-row:last-child { margin-bottom: 0; }
 #price-pop label { font-size: 11px; color: var(--gray3); flex-shrink: 0; }
@@ -646,7 +644,6 @@ const I18N={
   singlePriceTab:           {vi:'Giá lẻ', ja:'個別価格'},
   xotBulkTab:               {vi:'Giảm giá Xốt', ja:'ソース一括値引き'},
   xotBrandLabel:            {vi:'Nhóm xốt', ja:'ソースグループ'},
-  xotBulkNoMatch:           {vi:'Không có mặt hàng nào thuộc nhóm này trong giỏ', ja:'カート内にこのグループの商品がありません'},
 };
 function tf(key,vars){
   let s=tr(key);
@@ -1753,9 +1750,11 @@ function closePricePop(){ if(pricePopEl){pricePopEl.remove();pricePopEl=null;} }
 // Nhan dien nhom xot theo TIEN TO MA SKU (theo xac nhan cua nguoi dung):
 // BA = Xot Barona, HVX = Xot Huong Viet Xua. CHI tinh la xot neu category
 // (sheet Products) chua "xốt" - trung voi dieu kien isXot da dung san o noi khac.
+const XOT_BULK_EXCLUDE_SKUS=['BA22','HVX12','HVX01'];
 function getXotBrand(it){
   if(!it || !it.isXot) return null;
   const sku=String(it.sku||'').toUpperCase();
+  if(XOT_BULK_EXCLUDE_SKUS.includes(sku)) return null;
   if(sku.indexOf('HVX')===0) return 'hvx';
   if(sku.indexOf('BA')===0) return 'barona';
   return null;
@@ -1806,17 +1805,11 @@ function openPricePop(sku,ev){
   };
 
   const drawBulkHtml=()=>{
-    const matches=bulkMatches();
     const ref=bulkRef();
     const qic=bulkQtyInCase();
     const isPct=bulkDiscType==='pct';
     const refFinal=isPct?Math.round(ref.price*(1-bulkDiscVal/100)):Math.max(0,ref.price-bulkDiscVal);
     const refRetail=qic>0?Math.round(refFinal/qic):0;
-    const previewRows=matches.map(i=>{
-      const disc=isPct?Math.round(i.price*bulkDiscVal/100):bulkDiscVal;
-      const finalP=Math.max(0,i.price-disc);
-      return `<div>${escapeHtml(i.name)}: ¥${i.price.toLocaleString('ja-JP')} → <b>¥${finalP.toLocaleString('ja-JP')}</b></div>`;
-    }).join('');
     return `
       <div class="pp-row"><label>${tr('xotBrandLabel')}</label>
         <span class="pp-tg">
@@ -1833,8 +1826,7 @@ function openPricePop(sku,ev){
         </span>
       </div>
       <div class="pp-row"><label>${tr('sellPriceLabel')}</label><input id="pp-bulk-final" type="number" value="${refFinal}"></div>
-      ${qic>0?`<div class="pp-row"><label>${tr('retailPriceLabel')}</label><input id="pp-bulk-retail" type="number" value="${refRetail}"></div>`:''}
-      <div class="pp-bulk-preview">${previewRows||`<i>${tr('xotBulkNoMatch')}</i>`}</div>`;
+      ${qic>0?`<div class="pp-row"><label>${tr('retailPriceLabel')}</label><input id="pp-bulk-retail" type="number" value="${refRetail}"></div>`:''}`;
   };
 
   const draw=()=>{
