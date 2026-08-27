@@ -879,7 +879,7 @@ async function loadOrderHistory(force=false){
   body.innerHTML=`<div class="history-empty">${tr('historyEmptyLoading')}</div>`;
   try{
     const sep=sheetUrl.includes('?')?'&':'?';
-    const j=await fetchJSONP(sheetUrl+sep+'action=getOrderHistory&limit=120&date='+encodeURIComponent(dateToLoad));
+    const j=await fetchJSONP(sheetUrl+sep+'action=getOrderHistory&date='+encodeURIComponent(dateToLoad));
     if(j.status==='success'){
       orderHistoryData=j.data||[];
       loadedHistoryDate=dateToLoad;
