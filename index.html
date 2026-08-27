@@ -250,6 +250,14 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
 .msg-btn:disabled { background: var(--gray4); cursor: default; }
 .chat-note { font-size: 11px; color: var(--gray3); line-height: 1.6; background: var(--gray5); border-radius: 8px; padding: 10px; }
 .tag-chip { display: inline-block; background: var(--yellow-light); border: 1px solid var(--yellow); color: var(--gray2); border-radius: 12px; padding: 2px 10px; font-size: 11px; margin: 0 4px 4px 0; }
+#cust-tags-row { display: none; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--yellow-dark); }
+#cust-tags-row.show { display: flex; }
+#cust-tags-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.cust-tag-chip { display: inline-flex; align-items: center; gap: 5px; background: var(--white); border: 1px solid var(--yellow-dark); color: var(--red-dark); border-radius: 12px; padding: 3px 6px 3px 10px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.cust-tag-chip .ctc-del { cursor: pointer; color: var(--gray3); font-size: 13px; line-height: 1; }
+.cust-tag-chip .ctc-del:hover { color: var(--red); }
+#cust-tag-input { flex: 1; min-width: 180px; border: 1px dashed var(--gray4); border-radius: 12px; padding: 4px 10px; font-size: 11px; background: transparent; outline: none; }
+#cust-tag-input:focus { border-color: var(--red); background: var(--white); }
 .note-item { background: var(--gray5); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 12px; }
 .note-item .nd { font-size: 10px; color: var(--gray3); margin-top: 3px; }
 
@@ -437,6 +445,16 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
         <select id="delivery-day" style="width:50px;"><option value="">日</option></select>
       </div>
       <div class="of"><label data-i18n="noteLabel">Ghi chú</label><input id="order-note" placeholder="Ghi chú đơn hàng..." data-i18n-placeholder="notePh" style="flex:1;"></div>
+      <div id="cust-tags-row">
+        <div id="cust-tags-list"></div>
+        <input id="cust-tag-input" placeholder="+ Thêm ghi chú đặc biệt về khách..." data-i18n-placeholder="custTagInputPh" list="cust-tag-suggestions" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustTag();}">
+        <datalist id="cust-tag-suggestions">
+          <option value="Khách khó tính">
+          <option value="Khách không nhận điện thoại buổi chiều">
+          <option value="Khách nữ">
+          <option value="Khách nam">
+        </datalist>
+      </div>
     </div>
     <div id="paste-order-box">
   <div id="paste-order-head" onclick="togglePasteOrder()">
@@ -619,6 +637,7 @@ const I18N={
   chokuCodePh:              {vi:'Mã 直送先 (chỉ số)', ja:'直送先コード（数字のみ）'},
   welcomeGreeting:          {vi:'Xin chào, {name}!', ja:'こんにちは、{name}さん！'},
   welcomeSubtext:           {vi:'CHÚC BẠN MỘT NGÀY LÊN ĐƠN THUẬN LỢI', ja:'今日も一日、注文業務を頑張りましょう'},
+  custTagInputPh:           {vi:'+ Thêm ghi chú đặc biệt về khách...', ja:'+ 顧客の特記事項を追加...'},
 };
 function tf(key,vars){
   let s=tr(key);
@@ -1099,6 +1118,61 @@ function renderOrderHeader(){
   const t=getTab(), c=t?.customer;
   document.getElementById('hdr-customer-input').value=c?c.name:'';
   document.getElementById('hdr-id-input').value=c?c.id:'';
+  renderCustTags();
+}
+// ============ GHI CHU DAC BIET CUA KHACH (hashtag chips) ============
+// Chi de HIEN THI/tham khao cho sale, KHONG dua vao du lieu don hang hay ban in.
+// Luu lai theo MA KH (khong phai theo URL Messenger) de dung duoc voi moi khach,
+// ke ca khach chua co link Facebook. Cap nhat UI ngay lap tuc, luu nen phia sau
+// (khong cho nguoi dung phai doi) qua action rieng 'update_customer_tags'.
+function getCustTags(c){
+  return (c&&c.tags||'').split(',').map(x=>x.trim()).filter(Boolean);
+}
+function renderCustTags(){
+  const t=getTab(), c=t?.customer;
+  const row=document.getElementById('cust-tags-row');
+  const list=document.getElementById('cust-tags-list');
+  if(!c){ row.classList.remove('show'); list.innerHTML=''; return; }
+  row.classList.add('show');
+  const tags=getCustTags(c);
+  list.innerHTML=tags.map((tg,i)=>`<span class="cust-tag-chip">${escapeHtml(tg)}<span class="ctc-del" onclick="removeCustTag(${i})">×</span></span>`).join('');
+}
+function addCustTag(){
+  const t=getTab(), c=t?.customer; if(!c) return;
+  const input=document.getElementById('cust-tag-input');
+  const val=input.value.trim().replace(/,/g,'');   // bo dau phay vi dung lam ky tu phan cach khi luu
+  if(!val) return;
+  const tags=getCustTags(c);
+  if(!tags.includes(val)) tags.push(val);
+  input.value='';
+  applyCustTags(c,tags);
+}
+function removeCustTag(idx){
+  const t=getTab(), c=t?.customer; if(!c) return;
+  const tags=getCustTags(c);
+  tags.splice(idx,1);
+  applyCustTags(c,tags);
+}
+function applyCustTags(c,tags){
+  const newTagsStr=tags.join(', ');
+  c.tags=newTagsStr;
+  // Dong bo lai vao customerData goc de lan sau chon lai/mo lai khach nay trong
+  // cung phien lam viec van thay dung, khong can tai lai trang.
+  if(c.urlKey && customerData[c.urlKey]) customerData[c.urlKey].tags=newTagsStr;
+  renderCustTags();
+  renderChatPanel();   // khung chat cung dang hien Tags -> cap nhat theo luon
+  saveCustTagsInBackground(c.id,newTagsStr);
+}
+function saveCustTagsInBackground(code,tagsStr){
+  if(!sheetUrl||!code) return;
+  fetch(sheetUrl,{method:'POST',body:JSON.stringify({action:'update_customer_tags',data:{code:code,tags:tagsStr}})})
+    .then(r=>r.text())
+    .then(txt=>{
+      let j=null; try{ j=JSON.parse(txt); }catch(e){}
+      if(!j||j.status!=='success') console.warn('[custTags] Luu that bai:',txt);
+      else console.log('[custTags] Da luu:',tagsStr);
+    })
+    .catch(err=>console.warn('[custTags] Loi mang khi luu:',err));
 }
 // ============ CUSTOMER SEARCH (ô Mã KH trong khung đơn hàng) ============
 function findCustomerMatches(q){
@@ -1188,6 +1262,7 @@ function applyCustomerFromInputs(){
   }
   renderTabs();
   renderChatPanel();
+  renderCustTags();
   renderChokuDd(document.getElementById('choku-input').value);
 }
 // ============ CHAT PANEL (DRAWER) ============
@@ -1216,6 +1291,7 @@ function confirmManualCust(){
   renderTabs();
   toggleCustInfo(false);  // đóng drawer, quay lại lên đơn
   renderCart();           // nếu chọn 代引請求 thì phí COD hiện ngay trong summary
+  renderCustTags();
 }
 function startNewCustomer(){
   let t=getTab(); if(!t){ newTab(); t=getTab(); }
@@ -1225,6 +1301,7 @@ function startNewCustomer(){
   document.getElementById('hdr-customer-input').value='';
   renderTabs();
   toggleCustInfo(true);   // mở drawer -> renderChatPanel tự hiện form vì c.manual=true
+  renderCustTags();
 }
 function renderChatPanel(){
   const t=getTab(), c=t?.customer;
