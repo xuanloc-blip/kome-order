@@ -284,6 +284,9 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
 .icon-close { width: 30px; height: 30px; border: none; border-radius: 8px; background: rgba(212,45,39,.12); color: var(--red-dark); cursor: pointer; font-size: 18px; }
 .history-tools { display: flex; gap: 8px; padding: 10px 18px; border-bottom: 1px solid var(--gray4); align-items: center; background: #fff; }
 .history-tools input { margin: 0; width: 220px; }
+.history-tools select#history-date { margin: 0; width: 168px; flex: 0 0 auto; font-weight: 700; }
+.history-count { flex: 1; text-align: right; font-size: 11px; color: var(--gray3); font-weight: 700; white-space: nowrap; }
+.history-note { padding: 6px 18px; font-size: 11px; color: var(--gray3); background: var(--yellow-light); border-bottom: 1px solid var(--gray4); }
 .history-body { overflow: auto; min-height: 240px; }
 .history-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
 .history-table th { position: sticky; top: 0; background: var(--red); color: #fff; padding: 8px; text-align: left; white-space: nowrap; }
@@ -365,9 +368,12 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
       <button class="icon-close" onclick="closeOrderHistory()" title="Đóng" data-i18n-title="historyClose">×</button>
     </h2>
     <div class="history-tools">
+      <select id="history-date" onchange="onHistoryDateChange()"></select>
       <input id="history-search" placeholder="Tìm mã KH, tên khách, sản phẩm..." data-i18n-placeholder="historySearchPh" oninput="renderOrderHistory()">
+      <span id="history-count" class="history-count"></span>
       <button class="btn-primary" onclick="loadOrderHistory(true)" style="flex:0 0 auto;" data-i18n="historyReload">Tải lại</button>
     </div>
+    <div class="history-note" data-i18n="historyDateNote">Chỉ xem được đơn hàng trong 3 ngày gần nhất (dữ liệu cũ hơn đã được hệ thống tự động dọn dẹp).</div>
     <div id="history-body" class="history-body">
       <div class="history-empty" data-i18n="historyEmptyInit">Chưa tải dữ liệu lịch sử</div>
     </div>
@@ -542,6 +548,11 @@ const I18N={
   historyReprint:       {vi:'In lại', ja:'再印刷'},
   historyEdit:          {vi:'Chỉnh sửa', ja:'編集'},
   historyCancel:        {vi:'Hủy đơn', ja:'注文キャンセル'},
+  historyDateToday:     {vi:'Hôm nay ({d})', ja:'今日 ({d})'},
+  historyDateYesterday: {vi:'Hôm qua ({d})', ja:'昨日 ({d})'},
+  historyDateNDaysAgo:  {vi:'{n} ngày trước ({d})', ja:'{n}日前 ({d})'},
+  historyDateNote:      {vi:'Chỉ xem được đơn hàng trong 3 ngày gần nhất (dữ liệu cũ hơn đã được hệ thống tự động dọn dẹp).', ja:'直近3日分の注文のみ閲覧できます（それより古いデータは自動削除されています）。'},
+  historyCountLabel:    {vi:'{n} đơn hàng', ja:'{n}件の注文'},
   oosTitle:             {vi:'Sản phẩm đã hết hàng', ja:'在庫切れ商品'},
   oosAddAnyway:         {vi:'Vẫn thêm vào đơn', ja:'そのまま注文に追加'},
   changeStaff:          {vi:'Đổi người lên đơn', ja:'担当者を変更'},
@@ -689,6 +700,11 @@ let sheetUrl=localStorage.getItem(SHEET_URL_KEY)||'';
 let currentStaff=localStorage.getItem(STAFF_KEY)||'';
 let customerData={}, productData=[], chokuData=[], orderHistoryData=[];
 let expandedHistoryOrderId='';
+// So ngay lich su duoc phep xem lai - PHAI trung voi CLEANUP_KEEP_DAYS ben AppsScript,
+// vi sheet ngay cu hon se bi job cleanupOldData() xoa vinh vien.
+const HISTORY_MAX_DAYS_BACK=3;
+let currentHistoryDate='';       // yyyy-MM-dd dang chon tren dropdown
+let loadedHistoryDate='';        // yyyy-MM-dd cua du lieu dang co trong orderHistoryData
 let currentPage=1, filteredProducts=[], currentCat='all', currentSort='default';
 let tabs=[], activeTabId=null, tabCounter=0;
 let msgWindow=null;
@@ -830,20 +846,43 @@ function fetchJSONP(url){
     document.head.appendChild(s);
   });
 }
+function ymdLocal(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+// Chi cho chon trong HISTORY_MAX_DAYS_BACK ngay gan nhat (hom nay tro ve truoc) -
+// PHAI trung voi CLEANUP_KEEP_DAYS ben AppsScript, vi sheet ngay cu hon da bi xoa.
+function populateHistoryDateOptions(){
+  const sel=document.getElementById('history-date');
+  const opts=[];
+  for(let i=0;i<HISTORY_MAX_DAYS_BACK;i++){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const dLabel=d.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit'});
+    const label=i===0?tf('historyDateToday',{d:dLabel}):i===1?tf('historyDateYesterday',{d:dLabel}):tf('historyDateNDaysAgo',{n:i,d:dLabel});
+    opts.push(`<option value="${ymdLocal(d)}">${escapeHtml(label)}</option>`);
+  }
+  sel.innerHTML=opts.join('');
+  if(!currentHistoryDate) currentHistoryDate=ymdLocal(new Date());
+  sel.value=currentHistoryDate;
+}
+function onHistoryDateChange(){
+  currentHistoryDate=document.getElementById('history-date').value;
+  loadOrderHistory(true);
+}
 function openOrderHistory(){
   document.getElementById('history-modal').classList.remove('hidden');
-  if(!orderHistoryData.length) loadOrderHistory();
+  populateHistoryDateOptions();
+  if(loadedHistoryDate!==currentHistoryDate) loadOrderHistory();
 }
 function closeOrderHistory(){ document.getElementById('history-modal').classList.add('hidden'); }
 async function loadOrderHistory(force=false){
   if(!sheetUrl){ openSettings(); return; }
+  const dateToLoad=currentHistoryDate||ymdLocal(new Date());
   const body=document.getElementById('history-body');
   body.innerHTML=`<div class="history-empty">${tr('historyEmptyLoading')}</div>`;
   try{
     const sep=sheetUrl.includes('?')?'&':'?';
-    const j=await fetchJSONP(sheetUrl+sep+'action=getOrderHistory&limit=120');
+    const j=await fetchJSONP(sheetUrl+sep+'action=getOrderHistory&limit=120&date='+encodeURIComponent(dateToLoad));
     if(j.status==='success'){
       orderHistoryData=j.data||[];
+      loadedHistoryDate=dateToLoad;
       renderOrderHistory();
     }else{
       body.innerHTML=`<div class="history-empty">${tr('historyEmptyLoadErr')}: ${escapeHtml(j.message||'Không rõ lỗi')}</div>`;
@@ -860,6 +899,8 @@ function renderOrderHistory(){
     const items=(o.items||[]).map(i=>`${i.sku||''} ${i.productName||''} ${i.productNameJP||''}`).join(' ');
     return `${o.orderId||''} ${o.time||''} ${o.customerId||''} ${o.customerName||''} ${o.grandTotal||''} ${o.note||''} ${items}`.toLowerCase().includes(q);
   });
+  const countEl=document.getElementById('history-count');
+  if(countEl) countEl.textContent=tf('historyCountLabel',{n:rows.length});
   if(!rows.length){ body.innerHTML=`<div class="history-empty">${tr('historyEmptyNoMatch')}</div>`; return; }
   body.innerHTML=`<table class="history-table"><thead><tr>
     <th style="width:150px;">${tr('historyColOrderId')}</th><th style="width:140px;">${tr('historyColTime')}</th><th style="width:90px;">${tr('historyColCustId')}</th><th>${tr('historyColCustName')}</th><th style="width:110px;">${tr('historyColTotal')}</th>
