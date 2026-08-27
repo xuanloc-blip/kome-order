@@ -305,7 +305,12 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
 
 .cart-price { min-width: 62px; text-align: right; font-size: 12px; font-weight: 800; color: var(--gray1); border-bottom: 1px dashed var(--gray3); cursor: pointer; padding: 1px 2px; white-space: nowrap; }
 .cart-price.discounted { color: var(--red); }
-#price-pop { position: fixed; background: #fff; border: 1px solid var(--gray4); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 10px 12px; z-index: 1500; width: 216px; }
+#price-pop { position: fixed; background: #fff; border: 1px solid var(--gray4); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 10px 12px; z-index: 1500; width: 216px; max-height: 70vh; overflow-y: auto; }
+.pp-tabs { display: flex; gap: 4px; margin-bottom: 8px; border-bottom: 1px solid var(--gray5); padding-bottom: 6px; }
+.pp-tab-btn { flex: 1; border: none; background: var(--gray5); color: var(--gray2); font-size: 10px; font-weight: 700; padding: 5px 2px; border-radius: 6px; cursor: pointer; }
+.pp-tab-btn.active { background: var(--red); color: #fff; }
+.pp-bulk-preview { font-size: 10px; color: var(--gray3); line-height: 1.5; margin-top: 6px; max-height: 90px; overflow-y: auto; }
+.pp-bulk-preview b { color: var(--gray1); }
 #price-pop .pp-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 #price-pop .pp-row:last-child { margin-bottom: 0; }
 #price-pop label { font-size: 11px; color: var(--gray3); flex-shrink: 0; }
@@ -450,7 +455,7 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
         <input id="cust-tag-input" placeholder="+ Thêm ghi chú đặc biệt về khách..." data-i18n-placeholder="custTagInputPh" list="cust-tag-suggestions" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustTag();}">
         <datalist id="cust-tag-suggestions">
           <option value="Khách khó tính">
-          <option value="Khách không nhận điện thoại buổi chiều">
+          <option value="Không nhận điện thoại">
           <option value="Khách nữ">
           <option value="Khách nam">
         </datalist>
@@ -638,6 +643,10 @@ const I18N={
   welcomeGreeting:          {vi:'Xin chào, {name}!', ja:'こんにちは、{name}さん！'},
   welcomeSubtext:           {vi:'CHÚC BẠN MỘT NGÀY LÊN ĐƠN THUẬN LỢI', ja:'今日も一日、注文業務を頑張りましょう'},
   custTagInputPh:           {vi:'+ Thêm ghi chú đặc biệt về khách...', ja:'+ 顧客の特記事項を追加...'},
+  singlePriceTab:           {vi:'Giá lẻ', ja:'個別価格'},
+  xotBulkTab:               {vi:'Giảm giá Xốt', ja:'ソース一括値引き'},
+  xotBrandLabel:            {vi:'Nhóm xốt', ja:'ソースグループ'},
+  xotBulkNoMatch:           {vi:'Không có mặt hàng nào thuộc nhóm này trong giỏ', ja:'カート内にこのグループの商品がありません'},
 };
 function tf(key,vars){
   let s=tr(key);
@@ -1741,20 +1750,39 @@ function calcTaxByLine(cart, shipFees, cod, disc0){
 }
 let pricePopEl=null;
 function closePricePop(){ if(pricePopEl){pricePopEl.remove();pricePopEl=null;} }
+// Nhan dien nhom xot theo TIEN TO MA SKU (theo xac nhan cua nguoi dung):
+// BA = Xot Barona, HVX = Xot Huong Viet Xua. CHI tinh la xot neu category
+// (sheet Products) chua "xốt" - trung voi dieu kien isXot da dung san o noi khac.
+function getXotBrand(it){
+  if(!it || !it.isXot) return null;
+  const sku=String(it.sku||'').toUpperCase();
+  if(sku.indexOf('HVX')===0) return 'hvx';
+  if(sku.indexOf('BA')===0) return 'barona';
+  return null;
+}
 function openPricePop(sku,ev){
   ev.stopPropagation();
   closePricePop();
   const t=getTab(); const it=t?.cart.find(x=>x.sku===sku); if(!it) return;
   const p=productData.find(x=>x.sku===sku);
   const qtyInCase=p?packQty(fieldVal(p,'packsize')):0;
+  const xotItems=()=>t.cart.filter(i=>i.isXot);
+  // Chi hien tab "Giam gia Xot" khi gio hang co tu 2 MA xot tro len (bat ke nhom)
+  const xotEligible=xotItems().length>=2;
+  let activeTab='single';
+  let bulkBrand=getXotBrand(it)||'barona';
+  let bulkDiscType='yen';
+  let bulkDiscVal=0;
+
   pricePopEl=document.createElement('div');
   pricePopEl.id='price-pop';
   pricePopEl.addEventListener('click',e=>e.stopPropagation());
-  const draw=()=>{
+
+  const drawSingleHtml=()=>{
     const isPct=it.discountType==='pct';
     const finalPrice=effPrice(it);
     const retailVal=qtyInCase>0?Math.round(finalPrice/qtyInCase):0;
-    pricePopEl.innerHTML=`
+    return `
       <div class="pp-row"><label>${tr('priceLabel')}</label><input readonly value="${it.price.toLocaleString('ja-JP')}"></div>
       <div class="pp-row"><label>${tr('discountAmountLabel')}</label>
         <input id="pp-disc" type="number" min="0" value="${it.discount||''}" placeholder="0">
@@ -1765,6 +1793,102 @@ function openPricePop(sku,ev){
       </div>
       <div class="pp-row"><label>${tr('sellPriceLabel')}</label><input id="pp-final" type="number" value="${finalPrice}"></div>
       ${qtyInCase>0?`<div class="pp-row"><label>${tr('retailPriceLabel')}</label><input id="pp-retail" type="number" value="${retailVal}"></div>`:''}`;
+  };
+
+  // matches/ref/qtyInCase cua BULK tinh theo NHOM DANG CHON (bulkBrand), khong phai
+  // co dinh theo SP vua bam mo popup - de "Đơn giá/Giá bán/Giá bán lẻ" luon dung
+  // ngay ca khi nguoi dung doi sang nhom khac voi SP ho vua bam.
+  const bulkMatches=()=>xotItems().filter(i=>getXotBrand(i)===bulkBrand);
+  const bulkRef=()=>bulkMatches()[0]||it;
+  const bulkQtyInCase=()=>{
+    const rp=productData.find(x=>x.sku===bulkRef().sku);
+    return rp?packQty(fieldVal(rp,'packsize')):0;
+  };
+
+  const drawBulkHtml=()=>{
+    const matches=bulkMatches();
+    const ref=bulkRef();
+    const qic=bulkQtyInCase();
+    const isPct=bulkDiscType==='pct';
+    const refFinal=isPct?Math.round(ref.price*(1-bulkDiscVal/100)):Math.max(0,ref.price-bulkDiscVal);
+    const refRetail=qic>0?Math.round(refFinal/qic):0;
+    const previewRows=matches.map(i=>{
+      const disc=isPct?Math.round(i.price*bulkDiscVal/100):bulkDiscVal;
+      const finalP=Math.max(0,i.price-disc);
+      return `<div>${escapeHtml(i.name)}: ¥${i.price.toLocaleString('ja-JP')} → <b>¥${finalP.toLocaleString('ja-JP')}</b></div>`;
+    }).join('');
+    return `
+      <div class="pp-row"><label>${tr('xotBrandLabel')}</label>
+        <span class="pp-tg">
+          <button id="pp-brand-barona" class="${bulkBrand==='barona'?'active':''}">Barona</button>
+          <button id="pp-brand-hvx" class="${bulkBrand==='hvx'?'active':''}">HVX</button>
+        </span>
+      </div>
+      <div class="pp-row"><label>${tr('priceLabel')}</label><input readonly value="${ref.price.toLocaleString('ja-JP')}"></div>
+      <div class="pp-row"><label>${tr('discountAmountLabel')}</label>
+        <input id="pp-bulk-disc" type="number" min="0" value="${bulkDiscVal||''}" placeholder="0">
+        <span class="pp-tg">
+          <button id="pp-bulk-yen" class="${isPct?'':'active'}">¥</button>
+          <button id="pp-bulk-pct" class="${isPct?'active':''}">%</button>
+        </span>
+      </div>
+      <div class="pp-row"><label>${tr('sellPriceLabel')}</label><input id="pp-bulk-final" type="number" value="${refFinal}"></div>
+      ${qic>0?`<div class="pp-row"><label>${tr('retailPriceLabel')}</label><input id="pp-bulk-retail" type="number" value="${refRetail}"></div>`:''}
+      <div class="pp-bulk-preview">${previewRows||`<i>${tr('xotBulkNoMatch')}</i>`}</div>`;
+  };
+
+  const draw=()=>{
+    const tabsHtml=xotEligible?`
+      <div class="pp-tabs">
+        <button class="pp-tab-btn ${activeTab==='single'?'active':''}" id="pp-tab-single">${tr('singlePriceTab')}</button>
+        <button class="pp-tab-btn ${activeTab==='bulk'?'active':''}" id="pp-tab-bulk">${tr('xotBulkTab')}</button>
+      </div>`:'';
+    pricePopEl.innerHTML = tabsHtml + (activeTab==='bulk'?drawBulkHtml():drawSingleHtml());
+
+    if(xotEligible){
+      pricePopEl.querySelector('#pp-tab-single').onclick=()=>{activeTab='single';draw();};
+      pricePopEl.querySelector('#pp-tab-bulk').onclick=()=>{activeTab='bulk';draw();};
+    }
+
+    if(activeTab==='bulk'){
+      pricePopEl.querySelector('#pp-brand-barona').onclick=()=>{bulkBrand='barona';draw();};
+      pricePopEl.querySelector('#pp-brand-hvx').onclick=()=>{bulkBrand='hvx';draw();};
+      const applyBulk=()=>{
+        bulkMatches().forEach(i=>{
+          i.discount=bulkDiscVal; i.discountType=bulkDiscType;
+        });
+        renderCart();
+      };
+      const bulkDiscInput=pricePopEl.querySelector('#pp-bulk-disc');
+      bulkDiscInput.onchange=e=>{ bulkDiscVal=parseFloat(e.target.value)||0; applyBulk(); draw(); };
+      bulkDiscInput.onfocus=e=>e.target.select();
+      pricePopEl.querySelector('#pp-bulk-yen').onclick=()=>{bulkDiscType='yen';applyBulk();draw();};
+      pricePopEl.querySelector('#pp-bulk-pct').onclick=()=>{bulkDiscType='pct';applyBulk();draw();};
+      pricePopEl.querySelector('#pp-bulk-final').onchange=e=>{
+        const v=parseFloat(e.target.value)||0;
+        bulkDiscType='yen'; bulkDiscVal=bulkRef().price-v;
+        applyBulk(); draw();
+      };
+      pricePopEl.querySelector('#pp-bulk-final').onkeydown=e=>{
+        if(e.key!=='Enter') return;
+        const v=parseFloat(e.target.value)||0;
+        bulkDiscType='yen'; bulkDiscVal=bulkRef().price-v;
+        applyBulk(); closePricePop();
+      };
+      const bulkRetailInput=pricePopEl.querySelector('#pp-bulk-retail');
+      if(bulkRetailInput){
+        const applyBulkRetail=v=>{ bulkDiscType='yen'; bulkDiscVal=bulkRef().price-Math.round(v*bulkQtyInCase()); };
+        bulkRetailInput.onchange=e=>{ applyBulkRetail(parseFloat(e.target.value)||0); applyBulk(); draw(); };
+        bulkRetailInput.onfocus=e=>e.target.select();
+        bulkRetailInput.onkeydown=e=>{
+          if(e.key!=='Enter') return;
+          applyBulkRetail(parseFloat(e.target.value)||0);
+          applyBulk(); closePricePop();
+        };
+      }
+      return;
+    }
+
     pricePopEl.querySelector('#pp-disc').onchange=e=>{it.discount=parseFloat(e.target.value)||0;renderCart();draw();};
     pricePopEl.querySelector('#pp-disc').onfocus=e=>e.target.select();
     pricePopEl.querySelector('#pp-yen').onclick=()=>{it.discountType='yen';renderCart();draw();};
