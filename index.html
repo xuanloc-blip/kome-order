@@ -266,8 +266,21 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
 #loading.hidden { display: none; }
 .spinner { width: 40px; height: 40px; border: 4px solid rgba(254,200,48,.35); border-top-color: var(--yellow); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-#settings-modal, #history-modal, #oos-modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-#settings-modal.hidden, #history-modal.hidden, #oos-modal.hidden { display: none; }
+#settings-modal, #history-modal, #oos-modal, #announcement-modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+#settings-modal.hidden, #history-modal.hidden, #oos-modal.hidden, #announcement-modal.hidden { display: none; }
+.announcement-img { display: block; width: 100%; max-height: 320px; object-fit: contain; border-radius: 8px; margin-bottom: 14px; background: var(--gray5); }
+.announcement-title { font-size: 17px; font-weight: 800; color: var(--red-dark); margin-bottom: 8px; }
+.announcement-content { font-size: 13px; line-height: 1.6; color: var(--gray1); white-space: pre-wrap; max-height: 40vh; overflow-y: auto; }
+.announcement-actions { display: flex; gap: 8px; margin-top: 14px; }
+.announcement-actions .btn-primary { flex: 1; }
+.announcement-pager { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 14px; }
+.announcement-nav-btn { background: var(--gray5); border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 16px; font-weight: 800; color: var(--gray2); cursor: pointer; line-height: 1; }
+.announcement-nav-btn:hover { background: var(--gray4); }
+.announcement-dots { display: flex; align-items: center; gap: 6px; }
+.announcement-dot { width: 8px; height: 8px; padding: 0; border: none; border-radius: 999px; background: var(--gray4); cursor: pointer; }
+.announcement-dot.active { background: var(--red); width: 20px; }
+#announcement-badge { position: fixed; right: 18px; bottom: 18px; z-index: 999; background: var(--red); color: #fff; border: none; border-radius: 999px; padding: 10px 16px; font-size: 12px; font-weight: 800; box-shadow: 0 4px 14px rgba(0,0,0,.28); cursor: pointer; display: flex; align-items: center; gap: 6px; }
+#announcement-badge.hidden { display: none; }
 .modal { background: #fff; border-radius: 12px; padding: 24px; width: 470px; box-shadow: 0 8px 32px rgba(0,0,0,.3); }
 .modal.wide { width: min(920px, calc(100vw - 28px)); max-height: calc(100vh - 34px); display: flex; flex-direction: column; padding: 0; overflow: hidden; }
 .modal h2 { margin-bottom: 16px; font-size: 16px; color: var(--red-dark); }
@@ -379,6 +392,29 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
     </div>
   </div>
 </div>
+
+<div id="announcement-modal" class="hidden">
+  <div class="modal" style="width:440px;">
+    <h2 style="margin:0 0 10px;padding:0;border:none;background:none;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <span id="announcement-title" class="announcement-title" style="margin:0;">Thông báo</span>
+      <button class="icon-close" onclick="closeAnnouncement()" title="Đóng" data-i18n-title="historyClose" style="flex:0 0 auto;">×</button>
+    </h2>
+    <img id="announcement-img" class="announcement-img" style="display:none;" onerror="this.style.display='none';">
+    <div id="announcement-content" class="announcement-content"></div>
+    <div id="announcement-pager" class="announcement-pager" style="display:none;">
+      <button class="announcement-nav-btn" onclick="announcementPrevSlide()">‹</button>
+      <div id="announcement-dots" class="announcement-dots"></div>
+      <button class="announcement-nav-btn" onclick="announcementNextSlide()">›</button>
+    </div>
+    <div class="announcement-actions">
+      <button class="btn-primary" onclick="hideAnnouncement()" data-i18n="announcementHideBtn">Ẩn thông báo</button>
+    </div>
+  </div>
+</div>
+<button id="announcement-badge" class="hidden" onclick="openAnnouncement()">
+  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+  <span data-i18n="announcementBadge">Thông báo mới</span>
+</button>
 
 <div id="oos-modal" class="hidden">
   <div class="modal" style="width:380px;">
@@ -553,6 +589,9 @@ const I18N={
   historyDateNDaysAgo:  {vi:'{n} ngày trước ({d})', ja:'{n}日前 ({d})'},
   historyDateNote:      {vi:'Chỉ xem được đơn hàng trong 3 ngày gần nhất (dữ liệu cũ hơn đã được hệ thống tự động dọn dẹp).', ja:'直近3日分の注文のみ閲覧できます（それより古いデータは自動削除されています）。'},
   historyCountLabel:    {vi:'{n} đơn hàng', ja:'{n}件の注文'},
+  announcementDefaultTitle: {vi:'Thông báo', ja:'お知らせ'},
+  announcementHideBtn:      {vi:'Ẩn thông báo', ja:'通知を隠す'},
+  announcementBadge:        {vi:'Thông báo mới', ja:'新しいお知らせ'},
   oosTitle:             {vi:'Sản phẩm đã hết hàng', ja:'在庫切れ商品'},
   oosAddAnyway:         {vi:'Vẫn thêm vào đơn', ja:'そのまま注文に追加'},
   changeStaff:          {vi:'Đổi người lên đơn', ja:'担当者を変更'},
@@ -694,6 +733,7 @@ function setLang(lang){
   applyStockInfoVisibility(document.body.classList.contains('hide-stock-info'));
   renderTabs(); renderCart(); renderCategories(); renderProducts(); renderChatPanel();
   if(!document.getElementById('history-modal').classList.contains('hidden')) renderOrderHistory();
+  refreshAnnouncementTitle();
 }
 
 let sheetUrl=localStorage.getItem(SHEET_URL_KEY)||'';
@@ -705,6 +745,9 @@ let expandedHistoryOrderId='';
 const HISTORY_MAX_DAYS_BACK=3;
 let currentHistoryDate='';       // yyyy-MM-dd dang chon tren dropdown
 let loadedHistoryDate='';        // yyyy-MM-dd cua du lieu dang co trong orderHistoryData
+let announcementData=null;       // {enabled,title,slides:[{content,imageUrl}]} lay tu sheet "Thông báo"
+let announcementAutoShown=false; // chi tu dong bat popup 1 lan / lan mo trang, tranh hien lai khi cache-first goi applyData() 2 lan
+let announcementSlideIndex=0;    // trang dang xem trong popup thong bao (moi noi dung = 1 trang)
 let currentPage=1, filteredProducts=[], currentCat='all', currentSort='default';
 let tabs=[], activeTabId=null, tabCounter=0;
 let msgWindow=null;
@@ -820,7 +863,7 @@ async function loadData(force=false){
     const c=localStorage.getItem(CACHE_KEY);
     if(c){ try{
       const{ts,data}=JSON.parse(c);
-      applyData(data); hasCache=true; setStatus('ok');
+      applyData(data,false); hasCache=true; setStatus('ok');
       if(Date.now()-ts<CACHE_TTL) return;   // cache còn tươi -> khỏi gọi server
     }catch(e){} }
   }
@@ -830,7 +873,7 @@ async function loadData(force=false){
     const j=await fetchJSONP(sheetUrl);
     if(j.status==='success'){
       localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data:j.data}));
-      applyData(j.data); setStatus('ok');
+      applyData(j.data,force); setStatus('ok');
     }else if(!hasCache) setStatus('err',j.message);
   }catch(e){ if(!hasCache) setStatus('err',e.message); else setStatus('ok'); }
   showLoading(false);
@@ -879,7 +922,7 @@ async function loadOrderHistory(force=false){
   body.innerHTML=`<div class="history-empty">${tr('historyEmptyLoading')}</div>`;
   try{
     const sep=sheetUrl.includes('?')?'&':'?';
-    const j=await fetchJSONP(sheetUrl+sep+'action=getOrderHistory&date='+encodeURIComponent(dateToLoad));
+    const j=await fetchJSONP(sheetUrl+sep+'action=getOrderHistory&limit=120&date='+encodeURIComponent(dateToLoad));
     if(j.status==='success'){
       orderHistoryData=j.data||[];
       loadedHistoryDate=dateToLoad;
@@ -1064,7 +1107,7 @@ function escapeHtml(v){
 function jsString(v){
   return String(v??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r/g,'').replace(/\n/g,'\\n');
 }
-function applyData(d){
+function applyData(d,forceShowAnnouncement){
   customerData=d.customers||{};
   productData=d.products||[];
   // Tính sẵn chuỗi tìm kiếm 1 lần để gõ phím không phải normalize lại toàn bộ
@@ -1078,8 +1121,66 @@ function applyData(d){
     city:String(r.city||'').trim(), add1:String(r.add1||'').trim(), add2:String(r.add2||'').trim(),
   }));
   renderCategories(); filterProducts(document.getElementById('product-search-input').value||'');
+  applyAnnouncement(d.announcement,forceShowAnnouncement);
 }
 function reloadData(){ loadData(true); }
+// Popup thong bao lay tu sheet "Thông báo" (do sale tu sua noi dung/anh/bat-tat, khong
+// can sua code). Chi TU DONG mo 1 lan/lan vao trang (loadData cache-first co the goi
+// applyData 2 lan: 1 lan tu cache + 1 lan tu server, khong the mo popup 2 lan lien tiep) -
+// TRU KHI forceShow=true (nguoi dung chu dong bam "Tải lại dữ liệu"/Luu cai dat), luc do
+// LUON hien lai popup voi noi dung moi nhat de admin kiem tra ngay sau khi sua sheet.
+// Moi "slide" = 1 trang rieng (1 noi dung + 1 hinh anh), duyet bang cham tron/mui ten.
+function applyAnnouncement(ann,forceShow){
+  announcementData=ann||null;
+  const slides=(announcementData&&announcementData.slides)||[];
+  if(!announcementData||!announcementData.enabled||!slides.length) return;
+  document.getElementById('announcement-title').textContent=announcementData.title||tr('announcementDefaultTitle');
+  const dotsEl=document.getElementById('announcement-dots');
+  dotsEl.innerHTML=slides.map((_,i)=>`<button class="announcement-dot" onclick="announcementGoToSlide(${i})"></button>`).join('');
+  document.getElementById('announcement-pager').style.display=slides.length>1?'flex':'none';
+  announcementSlideIndex=0;
+  renderAnnouncementSlide();
+  if(!announcementAutoShown||forceShow){ announcementAutoShown=true; openAnnouncement(); }
+}
+function renderAnnouncementSlide(){
+  const slides=(announcementData&&announcementData.slides)||[];
+  const slide=slides[announcementSlideIndex]; if(!slide) return;
+  document.getElementById('announcement-content').textContent=slide.content||'';
+  const img=document.getElementById('announcement-img');
+  if(slide.imageUrl){ img.src=slide.imageUrl; img.style.display='block'; }
+  else { img.removeAttribute('src'); img.style.display='none'; }
+  document.querySelectorAll('#announcement-dots .announcement-dot').forEach((d,i)=>d.classList.toggle('active',i===announcementSlideIndex));
+}
+function announcementGoToSlide(i){ announcementSlideIndex=i; renderAnnouncementSlide(); }
+function announcementPrevSlide(){
+  const n=((announcementData&&announcementData.slides)||[]).length; if(!n) return;
+  announcementSlideIndex=(announcementSlideIndex-1+n)%n; renderAnnouncementSlide();
+}
+function announcementNextSlide(){
+  const n=((announcementData&&announcementData.slides)||[]).length; if(!n) return;
+  announcementSlideIndex=(announcementSlideIndex+1)%n; renderAnnouncementSlide();
+}
+function openAnnouncement(){
+  document.getElementById('announcement-modal').classList.remove('hidden');
+  document.getElementById('announcement-badge').classList.add('hidden');
+}
+// "Ẩn thông báo": dong popup nhung de lai nut nho o goc de mo lai xem tiep trong cung
+// phien, khac voi dau X (tat han, khong con nut nho) - theo yeu cau nguoi dung.
+function hideAnnouncement(){
+  document.getElementById('announcement-modal').classList.add('hidden');
+  document.getElementById('announcement-badge').classList.remove('hidden');
+}
+function closeAnnouncement(){
+  document.getElementById('announcement-modal').classList.add('hidden');
+  document.getElementById('announcement-badge').classList.add('hidden');
+}
+// Tieu de la NOI DUNG DO ADMIN NHAP (khong phai chuoi UI tinh) nen KHONG gan data-i18n
+// cho no - neu khong applyI18n() se de len mat noi dung tuy chinh moi khi doi ngon ngu.
+// Chi can tu cap nhat lai chu "Thông báo"/"お知らせ" mac dinh khi admin de trong o Tieu de.
+function refreshAnnouncementTitle(){
+  const el=document.getElementById('announcement-title');
+  if(el&&announcementData&&!announcementData.title) el.textContent=tr('announcementDefaultTitle');
+}
 function setStatus(t,m){
   const el=document.getElementById('connection-status');
   if(t==='ok'){el.textContent='● OK';el.title='接続済み';el.className='ok';}
