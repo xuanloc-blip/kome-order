@@ -1069,82 +1069,33 @@ const savedPrice=parseFloat(String(i.price||'').replace(/,/g,''))||0;
   alert(tf('orderLoadedToNewTabAlert',{id}));
 }
 
-// In lai dung CHUNG bo quy tac voi hoa don goc (handlePrint): cung 3 nhom khô/mát/lạnh,
-// cung style .gt/.dt/.ht/.ft. Nhung log lich su (注文履歴) KHONG luu san loai hang cho
-// tung dong hang -> phai tra lai theo category trong productData HIEN TAI (giong cach
-// editHistoryOrder() dang lam) de sap xep dung nhom. Vi log cung KHONG luu rieng 送料
-// theo tung nhom (chi luu 1 con so tong), phan tong ket cuoi trang giu nguyen dang GOP
-// chung (khong bia them so lieu khong co that), chi phan nhom o BANG CHI TIET san pham.
 function reprintHistoryOrder(id){
   const o=findHistoryOrder(id); if(!o) return;
-  const groups=[{key:'dry',label:'常温品 (Hàng Khô)',cls:'group-dry'},{key:'cool',label:'冷蔵品 (Hàng Mát)',cls:'group-cool'},{key:'cold',label:'冷凍品 (Hàng Lạnh)',cls:'group-cold'}];
-  const itemsWithType=(o.items||[]).map(i=>{
-    const p=productData.find(x=>x.sku===i.sku);
-    return Object.assign({},i,{shipType:p?getShipType(p.category||''):'dry'});
-  });
-  let allHtml='';
-  groups.forEach(g=>{
-    const items=itemsWithType.filter(i=>i.shipType===g.key);
-    if(!items.length) return;
-    let sub=0,rn=0,rows='';
-    items.forEach(i=>{
-      rn++;
-      sub+=parseFloat(String(i.lineTotal||'').replace(/,/g,''))||0;
-      rows+=`<tr><td style="text-align:center;color:#666;">${rn}</td><td>${escapeHtml(i.sku)}</td><td>${escapeHtml(i.productName)}<br><small>${escapeHtml(i.productNameJP)}</small></td><td style="text-align:right;">${escapeHtml(i.qty)}</td><td style="text-align:right;">¥${escapeHtml(i.price)}</td><td style="text-align:right;">¥${escapeHtml(i.lineTotal)}</td></tr>`;
-    });
-    allHtml+=`<div class="gt ${g.cls}">${g.label}</div><table class="dt"><thead><tr><th style="width:5%">行</th><th style="width:10%">コード</th><th style="width:43%">商品名</th><th style="width:13%">数量(ケース)</th><th style="width:12%">単価</th><th style="width:17%">金額</th></tr></thead><tbody>${rows}
-<tr style="border-top:2px solid #333;"><td colspan="3" style="border:none;"></td><td colspan="2" class="sl">商品合計</td><td class="sv">¥${sub.toLocaleString('ja-JP')}</td></tr></tbody></table>`;
-  });
-  const noteParts=[];
-  if(o.deliveryTime) noteParts.push(`【時間帯: ${o.deliveryTime}】`);
-  if(o.note) noteParts.push(o.note);
-  const reprintNote=noteParts.join(' ');
-  const orderCode=String(id||'').slice(-3);
-  const isCancelled=(o.status||'').includes('キャンセル');
-  const html=`<html><head><meta charset="UTF-8"><title>注文書 ${escapeHtml(id)}（再印刷）</title><style>
-body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;margin:0;font-size:8pt;color:#000;background:#f4f4f4}
-#inv{max-width:1000px;margin:0 auto;padding:10px 12px;background:#fff}
-h1{font-size:14pt;text-align:center;margin:2px 0 14px}
-table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:4px 5px;vertical-align:middle;line-height:1.3}
-.ht{table-layout:fixed}.ht .lb{background:#f9f9f9;text-align:center;font-weight:bold;width:15%;white-space:nowrap}.ht .vl{width:35%;overflow-wrap:break-word}.ht .sep{border:none;padding:3px 0;height:3px}
-.gt{font-size:8pt;font-weight:bold;margin:14px 0 6px;border-bottom:2px solid #000;padding-bottom:3px}
-.group-dry{border-color:#e65100}.group-cool{border-color:#2e7d32}.group-cold{border-color:#1565c0}
-.dt th{background:#444;color:#fff;padding:5px;text-align:center;white-space:nowrap;font-size:8pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.dt tbody tr:nth-child(even){background:#f9f9f9}.dt small{font-size:7pt;color:#555}
-.sl{text-align:right;background:#f9f9f9;font-size:8pt;font-weight:bold}.sv{text-align:right;font-size:10pt;font-weight:bold}
-.ft{margin-top:14px;width:100%}.ft td{border:1px solid #ddd;padding:6px 10px;font-size:9pt;font-weight:bold}
-.tl{text-align:right;background:#f9f9f9;width:55%}.tv{text-align:right;width:45%;font-size:11pt;font-weight:900}
-.cod td{background:#fff3f3;border-color:#f3c3c3}
-.ns{border:1px solid #ccc;border-radius:4px;overflow:hidden;margin-bottom:10px}
-.ns .lb{font-weight:bold;font-size:9pt;padding:4px 8px;background:#f9f9f9;border-bottom:1px solid #ddd}
-.ns .cnt{padding:5px 8px;white-space:pre-wrap;font-size:9pt}
-.h1-row{position:relative;margin:2px 0 14px}.h1-row h1{margin:0}
-.h1-row .order-code{position:absolute;top:0;right:0;font-size:8pt;font-weight:300;color:#777;letter-spacing:.5px}
-.reprint-badge{text-align:center;color:#D42D27;font-weight:bold;font-size:9pt;margin-bottom:4px;}
-@media print{body{background:#fff}#inv{box-shadow:none}.np{display:none}}
+  const rows=(o.items||[]).map((i,n)=>`<tr><td style="text-align:center;">${n+1}</td><td>${escapeHtml(i.sku)}</td><td>${escapeHtml(i.productName)}<br><small>${escapeHtml(i.productNameJP)}</small></td><td style="text-align:right;">${escapeHtml(i.qty)}</td><td style="text-align:right;">¥${escapeHtml(i.price)}</td><td style="text-align:right;">¥${escapeHtml(i.lineTotal)}</td></tr>`).join('');
+  const html=`<html><head><meta charset="UTF-8"><title>注文書 ${escapeHtml(id)}</title><style>
+body{font-family:system-ui,"Meiryo",sans-serif;font-size:9pt;margin:16px;}
+h1{font-size:13pt;text-align:center;}
+table{width:100%;border-collapse:collapse;margin-top:8px;}
+th,td{border:1px solid #ccc;padding:4px 6px;}
+th{background:#444;color:#fff;-webkit-print-color-adjust:exact;}
+.meta td{border:1px solid #ddd;}
+.tot{text-align:right;font-weight:bold;}
+@media print{.np{display:none}}
 </style></head><body>
-<button class="np" onclick="window.print()" style="padding:10px 20px;font-size:16px;margin:10px;cursor:pointer;">🖨 In Hóa Đơn</button>
-<div id="inv">
-<div class="reprint-badge">－ IN LẠI / 再印刷${isCancelled?' － ĐÃ HỦY / キャンセル':''} －</div>
-<div class="h1-row"><h1>注 文 請 書 (小売店専用 / ケース販売)</h1>${orderCode?`<span class="order-code">#${orderCode}</span>`:''}</div>
-<table class="ht">
-<tr><td class="lb">得意先コード</td><td class="vl">${escapeHtml(o.customerId||'')}</td><td class="lb">日時</td><td class="vl">${escapeHtml(o.time||'')}</td></tr>
-<tr><td class="lb">会社名</td><td class="vl" colspan="3">${escapeHtml(o.customerName||'')}</td></tr>
-${o.address?`<tr><td class="lb">住所</td><td class="vl" colspan="3">${escapeHtml(o.address)}</td></tr>`:''}
-<tr><td colspan="4" class="sep"></td></tr>
-${(o.chokuId||o.chokuName)?`<tr><td class="lb">納品先コード</td><td class="vl">${escapeHtml(o.chokuId||'')}</td><td class="lb">納品先名</td><td class="vl">${escapeHtml(o.chokuName||'')}</td></tr>
-<tr><td colspan="4" class="sep"></td></tr>`:''}
-<tr><td class="lb">営業担当</td><td class="vl">${escapeHtml(o.staff||'')}</td><td class="lb">役職</td><td class="vl"></td></tr>
+<button class="np" onclick="window.print()" style="padding:8px 16px;cursor:pointer;">🖨 In</button>
+<h1>注 文 請 書（再印刷）</h1>
+<table class="meta">
+<tr><td>注文番号</td><td><b>${escapeHtml(id)}</b></td><td>日時</td><td>${escapeHtml(o.time||'')}</td></tr>
+<tr><td>得意先</td><td>${escapeHtml(o.customerId||'')} ${escapeHtml(o.customerName||'')}</td><td>担当者</td><td>${escapeHtml(o.staff||'')}</td></tr>
+${o.chokuName?`<tr><td>直送先</td><td colspan="3">${escapeHtml(o.chokuId||'')} ${escapeHtml(o.chokuName||'')}</td></tr>`:''}
 </table>
-${reprintNote?`<div class="ns"><div class="lb">補足事項</div><div class="cnt">${escapeHtml(reprintNote).replace(/\n/g,'<br>')}</div></div>`:''}
-${allHtml}
-<table class="ft">
-<tr><td class="tl">送料</td><td class="tv">¥${escapeHtml(o.shippingFee||'0')}</td></tr>
-${o.codFee&&o.codFee!=='0'?`<tr class="cod"><td class="tl">代引き手数料</td><td class="tv" style="color:#D42D27;">¥${escapeHtml(o.codFee)}</td></tr>`:''}
-${o.discount&&o.discount!=='0'?`<tr><td class="tl">割引 (Giảm giá)</td><td class="tv" style="color:#D42D27;">-¥${escapeHtml(o.discount)}</td></tr>`:''}
-<tr><td class="tl">合 計</td><td class="tv"><strong>¥${escapeHtml(o.grandTotal||'')}</strong><div style="font-size:8pt;font-weight:normal;color:#888;margin-top:2px;">(Đã bao gồm thuế: ¥${escapeHtml(o.tax||'0')})</div></td></tr>
+<table><thead><tr><th>行</th><th>コード</th><th>商品名</th><th>数量</th><th>単価</th><th>金額</th></tr></thead><tbody>${rows}</tbody></table>
+<table class="meta">
+<tr><td class="tot">送料</td><td style="text-align:right;">¥${escapeHtml(o.shippingFee||'0')}</td></tr>
+${o.codFee&&o.codFee!=='0'?`<tr><td class="tot">代引き手数料</td><td style="text-align:right;">¥${escapeHtml(o.codFee)}</td></tr>`:''}
+${o.discount&&o.discount!=='0'?`<tr><td class="tot">割引</td><td style="text-align:right;">-¥${escapeHtml(o.discount)}</td></tr>`:''}
+<tr><td class="tot">合計 (税込 ¥${escapeHtml(o.tax||'0')})</td><td style="text-align:right;font-size:12pt;"><b>¥${escapeHtml(o.grandTotal||'')}</b></td></tr>
 </table>
-</div>
 </body></html>`;
   const w=window.open('','_blank');
   w.document.write(html); w.document.close(); w.focus();
