@@ -883,6 +883,42 @@ function renderTabs(){
       <span class="tab-close" onclick="closeTab('${t.id}',event)">×</span>
     </div>`;
   }).join('')+`<button id="btn-new-tab" onclick="newTab()" title="${tr('newTabTitle')}">+</button>`;
+  saveTabsDraft();   // moi thay doi tren tab/gio hang deu duoc luu nhap ngay
+}
+
+// ============ TU LUU GIO HANG (chong mat don khi lo F5 / dong tab / sap nguon) ============
+// Toan bo tab + gio hang truoc day chi nam trong bo nho tam, chi can lo tay tai lai trang
+// la mat sach du dang mo 5-6 don. Nay moi thay doi deu duoc ghi xuong may, mo lai trang thi
+// khoi phuc nguyen trang. Ban nhap chi giu trong ngay - qua ngay moi coi nhu bo (tranh mo
+// len thay don cu cua hom truoc roi in nham).
+const DRAFT_KEY='kome_tabs_draft';
+// Gom nhieu lan goi lien tiep (vd renderCart + renderTabs cung mot thao tac) thanh 1 lan ghi.
+let draftTimer=null;
+function saveTabsDraft(){
+  clearTimeout(draftTimer);
+  draftTimer=setTimeout(saveTabsDraftNow,300);
+}
+function saveTabsDraftNow(){
+  try{
+    const hasContent=tabs.some(t=>(t.cart&&t.cart.length)||t.customer);
+    if(!hasContent){ localStorage.removeItem(DRAFT_KEY); return; }
+    localStorage.setItem(DRAFT_KEY,JSON.stringify({day:todayKeyStr(),activeTabId:activeTabId,tabCounter:tabCounter,tabs:tabs}));
+  }catch(e){ console.warn('[draft] Khong luu duoc ban nhap:',e); }
+}
+function restoreTabsDraft(){
+  try{
+    const raw=localStorage.getItem(DRAFT_KEY);
+    if(!raw) return false;
+    const d=JSON.parse(raw);
+    if(!d||!Array.isArray(d.tabs)||!d.tabs.length) return false;
+    if(d.day!==todayKeyStr()){ localStorage.removeItem(DRAFT_KEY); return false; } // ban nhap hom truoc -> bo
+    tabs=d.tabs;
+    tabCounter=d.tabCounter||tabs.length;
+    setActiveTab(tabs.some(t=>t.id===d.activeTabId)?d.activeTabId:tabs[0].id);
+    const n=tabs.filter(t=>(t.cart&&t.cart.length)||t.customer).length;
+    console.log('[draft] Da khoi phuc '+n+' don dang lam do');
+    return true;
+  }catch(e){ console.warn('[draft] Khong doc duoc ban nhap:',e); return false; }
 }
 
 // ============ SETTINGS / DATA ============
@@ -937,10 +973,13 @@ let jsonpSeq=0;
 function fetchJSONP(url){
   return new Promise((res,rej)=>{
     const cb='kome_cb_'+(++jsonpSeq)+'_'+Date.now(), s=document.createElement('script');
-    const t=setTimeout(()=>{cl();rej(new Error('Timeout'));},15000);
+    // Bao cho nguoi dung biet la mang dang cham chu KHONG phai web bi treo - truoc day man
+    // hinh dung im 15 giay roi bao loi, ai cung tuong hong.
+    const slow=setTimeout(()=>{ setStatus('loading','Mạng đang chậm, vui lòng đợi...'); },5000);
+    const t=setTimeout(()=>{cl();rej(new Error('Máy chủ không phản hồi (quá 20 giây)'));},20000);
     window[cb]=d=>{cl();res(d);};
-    function cl(){clearTimeout(t);delete window[cb];s.parentNode&&s.parentNode.removeChild(s);}
-    s.onerror=()=>{cl();rej(new Error('Script error'));};
+    function cl(){clearTimeout(t);clearTimeout(slow);delete window[cb];s.parentNode&&s.parentNode.removeChild(s);}
+    s.onerror=()=>{cl();rej(new Error('Không kết nối được máy chủ'));};
     s.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
     document.head.appendChild(s);
   });
@@ -957,20 +996,30 @@ function apiPost(body,extraOpts){
     .then(r=>r.text())
     .then(txt=>{ let j=null; try{ j=JSON.parse(txt); }catch(e){} return j; });
 }
-function ymdLocal(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+// Ngay theo GIO NHAT (khong theo dong ho may nhan vien). Backend dat ten sheet ngay theo
+// Asia/Tokyo, nen neu o day lay gio may (VN, cham 2 tieng) thi trong khoang 22h-24h gio VN
+// - da sang ngay moi ben Nhat - muc "Hom nay" se tro nham vao sheet ngay hom truoc va nhan
+// vien tuong hom nay chua co don nao.
+// offsetDays: 0 = hom nay, 1 = hom qua...
+function ymdTokyo(offsetDays){
+  const d=new Date(Date.now()-(offsetDays||0)*86400000);
+  const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);
+  const g=t=>p.find(x=>x.type===t).value;
+  return g('year')+'-'+g('month')+'-'+g('day');
+}
 // Chi cho chon trong HISTORY_MAX_DAYS_BACK ngay gan nhat (hom nay tro ve truoc) -
 // PHAI trung voi CLEANUP_KEEP_DAYS ben AppsScript, vi sheet ngay cu hon da bi xoa.
 function populateHistoryDateOptions(){
   const sel=document.getElementById('history-date');
   const opts=[];
   for(let i=0;i<HISTORY_MAX_DAYS_BACK;i++){
-    const d=new Date(); d.setDate(d.getDate()-i);
-    const dLabel=d.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit'});
+    const ymd=ymdTokyo(i);                                  // yyyy-MM-dd theo gio Nhat
+    const dLabel=ymd.slice(8,10)+'/'+ymd.slice(5,7);        // hien dd/MM cho de doc
     const label=i===0?tf('historyDateToday',{d:dLabel}):i===1?tf('historyDateYesterday',{d:dLabel}):tf('historyDateNDaysAgo',{n:i,d:dLabel});
-    opts.push(`<option value="${ymdLocal(d)}">${escapeHtml(label)}</option>`);
+    opts.push(`<option value="${ymd}">${escapeHtml(label)}</option>`);
   }
   sel.innerHTML=opts.join('');
-  if(!currentHistoryDate) currentHistoryDate=ymdLocal(new Date());
+  if(!currentHistoryDate) currentHistoryDate=ymdTokyo(0);
   sel.value=currentHistoryDate;
 }
 function onHistoryDateChange(){
@@ -985,7 +1034,7 @@ function openOrderHistory(){
 function closeOrderHistory(){ document.getElementById('history-modal').classList.add('hidden'); }
 async function loadOrderHistory(force=false){
   if(!sheetUrl){ openSettings(); return; }
-  const dateToLoad=currentHistoryDate||ymdLocal(new Date());
+  const dateToLoad=currentHistoryDate||ymdTokyo(0);
   const body=document.getElementById('history-body');
   body.innerHTML=`<div class="history-empty">${tr('historyEmptyLoading')}</div>`;
   try{
@@ -1278,8 +1327,20 @@ function todayKeyStr(){
   return g('year') + g('month') + g('day');
 }
 
+// Ma dinh danh RIENG cho MOI LAN BAM IN (khac voi ma don chinh thuc do server sinh).
+// Gui kem trong moi lan thu lai cua CUNG mot don, de server nhan ra "van la don cu" ke ca
+// khi don do CHUA co ma don chinh thuc. Truoc day khong co no: don khong co ma don ma bi
+// thu lai se duoc server sinh ma MOI moi lan -> ghi thanh 2-3 don trung nhau.
+function newClientOrderKey(){
+  return 'c_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+}
+
 async function reserveNextOrderId(){
   if(!sheetUrl || reservingId) return;
+  // Da co ma giu cho con dung han (cua hom nay) thi thoi, khong xin them ma moi. Truoc day
+  // moi lan chon lai tai khoan deu xin 1 ma moi va bo ma cu -> so thu tu don trong ngay bi
+  // nhay coc (007, 015, 023...), gay kho khi doi chieu thu cong.
+  if(reservedOrderId && reservedOrderId.indexOf(todayKeyStr())===0) return;
   reservingId = true;
   try{
     const j = await apiPost({action:'reserveOrderId'});
@@ -1324,16 +1385,26 @@ async function saveOrderInBackground(saveData, attempt){
   attempt = attempt || 1;
   try{
     const j = await apiPost({action:'saveOrder',data:saveData});
-    if(!j || j.status!=='ok') throw new Error((j&&j.message)||'Không rõ lỗi');
-    console.log('[saveOrder] Đã lưu nền OK:', j.orderId);
+    if(!j){
+      // Khong doc duoc JSON = mat mang / Apps Script tra ve trang loi -> DANG THU LAI DUOC.
+      const e=new Error('Không kết nối được máy chủ'); e.retryable=true; throw e;
+    }
+    if(j.status!=='ok'){
+      // Server DA NHAN va tra loi ro rang la loi (sai ten sheet, het quota...) -> thu lai
+      // 3 lan cung chi ra ket qua y het, chi lam nhan vien cho them 9 giay truoc mat khach.
+      const e=new Error(j.message||'Máy chủ từ chối lưu đơn'); e.retryable=false; throw e;
+    }
+    console.log('[saveOrder] Đã lưu nền OK:', j.orderId, j.duplicate?'(đã có sẵn, không ghi lặp)':'', j.repairedMaster?'(đã ghi bù bảng tổng)':'');
     loadTodayStats(); // don moi vua luu xong -> cap nhat so lieu ngay, khong cho het 45s
   }catch(err){
     console.error('[saveOrder] Lưu nền thất bại (lần '+attempt+'):', err);
-    if(attempt < 3){
+    const canRetry = err.retryable !== false;   // loi mang / loi khong xac dinh -> thu lai
+    if(canRetry && attempt < 3){
       setTimeout(function(){ saveOrderInBackground(saveData, attempt+1); }, 3000*attempt);
-    }else{
-      alert('⚠️ LƯU ĐƠN THẤT BẠI sau 3 lần thử!\nMã đơn: '+(saveData.orderId||'(không có)')+'\nĐơn ĐÃ IN nhưng CHƯA được ghi vào Sheet.\nVui lòng kiểm tra mạng và tạo lại đơn này, hoặc báo quản lý nhập tay.\nLỗi: '+err.message);
+      return;
     }
+    const lyDo = canRetry ? 'sau 3 lần thử' : '(máy chủ từ chối)';
+    alert('⚠️ LƯU ĐƠN THẤT BẠI '+lyDo+'!\nMã đơn: '+(saveData.orderId||'(chưa có mã)')+'\nĐơn ĐÃ IN nhưng CHƯA được ghi vào Sheet.\nVui lòng kiểm tra mạng và tạo lại đơn này, hoặc báo quản lý nhập tay.\nLỗi: '+err.message);
   }
 }
 function renderOrderHeader(){
@@ -2150,6 +2221,7 @@ function marginClass(pct){
 }
 function renderCart(){
   const t=getTab();
+  saveTabsDraft();   // moi thay doi gio hang/gia/phi ship deu di qua day -> luu nhap ngay
   const cartEl=document.getElementById('cart-items'), sumEl=document.getElementById('summary');
   if(!t||!t.cart.length){ cartEl.innerHTML=`<div style="text-align:center;color:var(--gray3);padding:24px;font-size:12px;">${tr('cartEmpty')}</div>`; sumEl.innerHTML=''; return; }
   const groups=[{key:'dry',label:tr('groupDryLabel'),cls:'lbl-dry',sgc:'sgc-dry'},{key:'cool',label:tr('groupCoolLabel'),cls:'lbl-cool',sgc:'sgc-cool'},{key:'cold',label:tr('groupColdLabel'),cls:'lbl-cold',sgc:'sgc-cold'}];
@@ -2226,12 +2298,47 @@ function checkXotQtyIntegrity(cart){
   }
   return null;
 }
+// Chan bam DUP nut In: handlePrint la async (co cho lay ma don), neu khong khoa thi bam
+// 2 cai lien tiep se chay tron quy trinh 2 lan -> in 2 ban VA ghi 2 don khac ma.
+let printing=false;
 async function handlePrint(){
+  if(printing) return;
   const t=getTab();
   if(!t?.cart.length){alert('Giỏ hàng đang trống!');return;}
   if(!t.customer){alert('Chưa chọn khách hàng!');return;}
   const xotErr=checkXotQtyIntegrity(t.cart);
   if(xotErr){alert(xotErr);return;}
+  // Da in gio hang nay roi ma bam In tiep (khong doi gi trong gio) -> nhac lai cho chac,
+  // vi day gan nhu luon la bam nham/tuong chua an, va moi lan bam la them 1 don that.
+  if(t.printedSignature && t.printedSignature===cartSignature(t)){
+    if(!confirm('Giỏ hàng này vừa được in và đã lưu thành đơn.\nBạn có chắc muốn tạo THÊM một đơn nữa giống hệt không?')) return;
+  }
+  printing=true;
+  const printBtn=document.getElementById('btn-print');
+  const printBtnHtml=printBtn?printBtn.innerHTML:'';
+  if(printBtn){ printBtn.disabled=true; printBtn.style.opacity='.6'; printBtn.style.cursor='wait'; printBtn.textContent='Đang tạo đơn…'; }
+  const releasePrintLock=()=>{
+    printing=false;
+    if(printBtn){ printBtn.disabled=false; printBtn.style.opacity=''; printBtn.style.cursor=''; printBtn.innerHTML=printBtnHtml; }
+  };
+  try{
+    await doPrint(t);
+    t.printedSignature=cartSignature(t); // nho lai da in gio nay, de lan bam sau con hoi xac nhan
+  }catch(err){
+    console.error('[handlePrint] Loi khi tao don:', err);
+    alert('Có lỗi khi tạo đơn hàng:\n'+(err&&err.message||err));
+  }finally{
+    releasePrintLock();
+  }
+}
+// Dau van tay cua gio hang - de nhan ra "van dung gio hang vua in" khi bam In lan nua.
+function cartSignature(t){
+  return JSON.stringify({
+    c: t.customer&&t.customer.id,
+    items: (t.cart||[]).map(i=>[i.sku,i.qty,i.discount,i.discountType]).sort()
+  });
+}
+async function doPrint(t){
 
   const dm=document.getElementById('delivery-month').value, dd=document.getElementById('delivery-day').value;
   const dt=document.getElementById('delivery-time').value, nt=document.getElementById('order-note').value;
@@ -2303,6 +2410,7 @@ async function handlePrint(){
 
   const saveData={
     orderId:orderId,
+    clientKey:newClientOrderKey(), // chong ghi trung khi thu lai, ke ca khi orderId con rong
     customerId:c.id,customerName:c.name,address:c.address||'',chokuId:dc,chokuName:dn,staff:salesRep,
     items:t.cart.map(it=>{
       const ep=effPrice(it);
@@ -2391,6 +2499,12 @@ document.addEventListener('keydown',e=>{
   if(e.key==='F4'){e.preventDefault();document.getElementById('hdr-id-input').focus();}
   if(e.key==='F3'){e.preventDefault();document.getElementById('product-search-input').focus();}
 });
+// Canh bao truoc khi dong/tai lai trang neu con hang trong gio - lop chan thu hai ben canh
+// ban nhap tu luu, de khong ai lo tay mat don ma khong hay biet.
+window.addEventListener('beforeunload',e=>{
+  const hasItems=tabs.some(t=>t.cart&&t.cart.length);
+  if(hasItems){ e.preventDefault(); e.returnValue=''; }
+});
 window.addEventListener('DOMContentLoaded',()=>{
   // Populate month/day selects
   const ms=document.getElementById('delivery-month'), ds=document.getElementById('delivery-day');
@@ -2400,7 +2514,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   renderStaffScreen();
   updateStaffChip();
   applyStockInfoVisibility(localStorage.getItem(STOCK_INFO_HIDDEN_KEY)==='1');
-  newTab();
+  if(!restoreTabsDraft()) newTab();   // khoi phuc don dang lam do (neu co), khong thi mo tab trong
   // KHONG tu an man hinh "Chọn người lên đơn" nua, du currentStaff da co san tu truoc -
   // moi lan vao trang PHAI chon lai dung tai khoan cua minh. Viec kiem tra key/tai du
   // lieu cung KHONG lam o day nua, chuyen sang sau khi chon xong (xem selectStaff()).
