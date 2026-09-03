@@ -949,7 +949,10 @@ async function loadData(force=false){
   if(!hasCache) showLoading(true);          // chỉ chặn màn hình khi KHÔNG có gì để hiện
   setStatus('loading');
   try{
-    const j=await apiGet('');
+    // force = nguoi dung CHU DONG bam "Tải lại dữ liệu" -> gui fresh=1 de server doc lai
+    // sheet that thay vi tra tu bo nho dem (dung khi vua sua gia/ton kho trong Sheet).
+    // Tai binh thuong thi de server dung cache: 8 giay xuong con ~1 giay.
+    const j=await apiGet(force?'fresh=1':'');
     if(j.status==='success'){
       // Ghi cache PHAI nam trong try/catch RIENG: localStorage co han muc (~5MB) va
       // setItem NEM LOI khi day - khong duoc lam hong luong tai du lieu vi 1 loi ghi cache.
