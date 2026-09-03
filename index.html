@@ -271,17 +271,11 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
 .note-item .nd { font-size: 10px; color: var(--gray3); margin-top: 3px; }
 
 /* Loading + modal */
-#loading { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 2050; }
+#loading { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 999; }
 #loading.hidden { display: none; }
 .spinner { width: 40px; height: 40px; border: 4px solid rgba(254,200,48,.35); border-top-color: var(--yellow); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 #settings-modal, #history-modal, #oos-modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-/* #settings-modal RIENG mot z-index cao hon #staff-screen (2000)/#loading (2050) - day
-   la modal DUY NHAT co the duoc mo TRUOC KHI unlock (tu selectStaff()/handleApiAuthResult
-   khi chua co/sai key), nen phai luon noi len TREN man hinh khoa, khong thi nguoi dung
-   se khong thay o nhap key dau ca du modal van dang mo o phia sau. Cac modal con lai
-   (history/oos) chi mo duoc SAU KHI da unlock nen khong can dieu nay. */
-#settings-modal { z-index: 2200; }
 #settings-modal.hidden, #history-modal.hidden, #oos-modal.hidden { display: none; }
 .modal { background: #fff; border-radius: 12px; padding: 24px; width: 470px; box-shadow: 0 8px 32px rgba(0,0,0,.3); }
 .modal.wide { width: min(920px, calc(100vw - 28px)); max-height: calc(100vh - 34px); display: flex; flex-direction: column; padding: 0; overflow: hidden; }
@@ -534,22 +528,7 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
 // base64 cua popup thong bao (co the vai MB), doi ten key la trinh duyet bo han cache
 // cu di thay vi de no chiem cho trong localStorage mai mai.
 const SHEET_URL_KEY='kome_sheet_url', CACHE_KEY='kome_data_cache_v4', STAFF_KEY='kome_staff', STOCK_INFO_HIDDEN_KEY='kome_stock_info_hidden';
-// MA BAO MAT CHUNG - gan san day, nhan vien KHONG phai nhap gi ca, mo web la dung ngay.
-// PHAI trung voi DEFAULT_API_KEY (hoac Script Property "API_KEY") ben Apps Script, neu
-// lech thi moi request deu bi tra ve Unauthorized.
-//
-// Tac dung: chan nguoi chi biet link Web App (link nay gan cung o DEFAULT_SHEET_URL ben
-// duoi) doc trom danh sach khach hang/gia von/lich su don, hoac ghi-huy don tuy y.
-// KHONG chan duoc nguoi da co file index.html nay - ai cam duoc file la co key.
-//
-// DOI KEY khi nghi lo (vd nhan vien nghi viec mang file di): sua chuoi o day, sua khop
-// ben Apps Script (hoac dat Script Property "API_KEY"), roi phat lai file cho moi nguoi.
-const API_KEY='TwbZOYlpWvv6sEIbbLvptIq0byiEEjGX';
-// URL Apps Script gan cung san de nguoi dung MOI khong can vao Cai dat dan link nua -
-// link nay von khong con la "bi mat" thuc su (moi sale deu phai biet de dung web), gan
-// cung KHONG lam lo them gi so voi hien tai. Rieng API KEY thi KHONG gan cung o day (xem
-// apiKey ben duoi) - key phai duoc nhap rieng moi may thi moi con tac dung chan nguoi chi
-// co file index.html (vd bi share nham) ma khong duoc cho key rieng.
+// URL Apps Script gan cung san de nguoi dung MOI khong can vao Cai dat dan link nua.
 const DEFAULT_SHEET_URL='https://script.google.com/macros/s/AKfycbwszMofAslML69DVGfXvGn9tjp57R9ksUBim-6i6mMaVARwQFpHXPC2ivexjJENiJJc/exec';
 const CACHE_TTL=15*60*1000, RENDER_CHUNK=40;
 const TAX10=['BS01','BS02','BS04','BS06','HAB05','HAB06','HAL02','HAL03','HAL08','HAL11','LD01','LD02','RV01','RV02','RV03','RV05','RV06','RV07','RV09'];
@@ -689,7 +668,6 @@ const I18N={
   custMsgNoEmbedNote:   {vi:'ℹ️ Facebook không cho phép nhúng Messenger trực tiếp vào web khác. Nút trên sẽ mở chat trong cửa sổ riêng — dùng "Mở cạnh màn hình" để đặt cửa sổ chat bên phải màn hình.', ja:'ℹ️ FacebookはMessengerを他のサイトに直接埋め込むことを許可していません。上のボタンは別ウィンドウでチャットを開きます。「画面横に開く」を使うと画面右側にチャットウィンドウを配置できます。'},
   custMsgNoLinkNote:    {vi:'ℹ️ Khách này chưa có link Messenger trên sheet Facebook. Thêm dòng vào sheet Facebook (mã KH + URL) để hiện nút chat.', ja:'ℹ️ この顧客はFacebook sheetにMessengerリンクがまだありません。Facebook sheetに行を追加（得意先コード＋URL）するとチャットボタンが表示されます。'},
   urlRequiredAlert:         {vi:'Vui lòng nhập URL', ja:'URLを入力してください'},
-  keyMismatchAlert:         {vi:'Mã bảo mật của bản này đã hết hiệu lực (quản trị viên đã đổi mã).\nVui lòng liên hệ quản trị viên để lấy file mới — bạn không tự sửa được.', ja:'このファイルのセキュリティキーは無効です（管理者がキーを変更しました）。\n管理者に新しいファイルをご依頼ください。'},
   historyCancelConfirm:     {vi:'Bạn chắc chắn muốn HỦY đơn {id}?', ja:'注文 {id} を本当にキャンセルしますか？'},
   historyCancelFailAlert:   {vi:'Hủy thất bại: {msg}', ja:'キャンセルに失敗しました: {msg}'},
   custNotFoundForEditAlert: {vi:'Không tìm thấy khách hàng mã {id} trong dữ liệu hiện tại', ja:'現在のデータに得意先コード {id} が見つかりません'},
@@ -758,7 +736,6 @@ function setLang(lang){
 }
 
 let sheetUrl=localStorage.getItem(SHEET_URL_KEY)||DEFAULT_SHEET_URL;
-let apiKey=API_KEY; // ma chung, gan san - khong con phu thuoc vao nguoi dang chon
 let currentStaff=localStorage.getItem(STAFF_KEY)||'';
 let customerData={}, productData=[], chokuData=[], orderHistoryData=[];
 let expandedHistoryOrderId='';
@@ -845,14 +822,10 @@ function selectStaff(i){
   document.getElementById('welcome-avatar').innerHTML=s.avatar?`<img src="${s.avatar}" onerror="this.outerHTML='${s.short}'">`:s.short;
   document.getElementById('welcome-text').innerHTML=`${escapeHtml(tf('welcomeGreeting',{name:s.name}))}<small>${escapeHtml(tr('welcomeSubtext'))}</small>`;
   ws.classList.add('show');
+  document.getElementById('staff-screen').classList.add('hidden');
   updateStaffChip();
   setTimeout(()=>{ ws.classList.remove('show'); }, 2000);
-  // QUAN TRONG: KHONG an man hinh "Chọn người lên đơn" o day. No chi bi an trong
-  // unlockApp(), va unlockApp() CHI duoc goi sau khi loadData(true) nhan duoc phan hoi
-  // THAT tu server - khong suy doan tu cache, khong an som. Nho vay neu ma bao mat sai
-  // (vd admin da doi key ma file chua duoc cap nhat), nguoi dung van ket o man hinh nay
-  // chu khong vao duoc ung dung roi thao tac tren du lieu cu trong cache.
-  loadData(true); reserveNextOrderId(); startTodayStatsPolling();
+  loadData(); reserveNextOrderId(); startTodayStatsPolling();
 }
 // Mo lai man hinh nay (vd bam doi nguoi) -> tu dong nhay dung TRANG dang chua nguoi hien
 // tai, tranh nguoi dung phai tu bam mui ten tim lai neu ho dang o trang 2.
@@ -918,8 +891,6 @@ function openSettings(){
   document.getElementById('settings-modal').classList.remove('hidden');
 }
 function closeSettings(){ document.getElementById('settings-modal').classList.add('hidden'); }
-// Chi con luu URL Apps Script (nam trong "Cai dat nang cao"). Ma bao mat da duoc gan
-// san trong hang const API_KEY o dau file nen khong con o nhap nao o day nua.
 function saveSettings(){
   const u=document.getElementById('setting-url').value.trim();
   if(!u) return alert(tr('urlRequiredAlert'));
@@ -927,14 +898,9 @@ function saveSettings(){
   localStorage.setItem(SHEET_URL_KEY,u);
   closeSettings(); loadData(true);
 }
-// An man hinh "Chọn người lên đơn" (dang lam nhiem vu MAN HINH KHOA toan bo ung dung o
-// phia sau no, z-index cao hon tat ca) - CHI duoc goi tu 1 cho DUY NHAT: nhanh sau khi
-// loadData() nhan phan hoi THAT tu server xac nhan key dung voi dung nguoi dang chon.
-// Goi lai nhieu lan vo hai (idempotent).
-function unlockApp(){ document.getElementById('staff-screen').classList.add('hidden'); }
 // Cache-first (stale-while-revalidate): hiện cache ngay, tải mới chạy ngầm
 async function loadData(force=false){
-  if(!apiKey){ openSettings(); return; }
+  if(!sheetUrl){ openSettings(); return; }
   let hasCache=false;
   if(!force){
     const c=localStorage.getItem(CACHE_KEY);
@@ -950,20 +916,14 @@ async function loadData(force=false){
     const j=await apiGet('');
     if(j.status==='success'){
       // Ghi cache PHAI nam trong try/catch RIENG: localStorage co han muc (~5MB) va
-      // setItem NEM LOI khi day. Truoc day loi do lam nhay thang xuong catch tong ben
-      // duoi, nen applyData()/unlockApp() KHONG BAO GIO chay -> nguoi dung ket cung o
-      // man hinh chon nhan vien du key hoan toan dung. Cache chi la toi uu toc do,
-      // ghi that bai thi bo qua, KHONG duoc lam hong luong dang nhap.
+      // setItem NEM LOI khi day - khong duoc lam hong luong tai du lieu vi 1 loi ghi cache.
       try{
         localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data:j.data}));
       }catch(e){ console.warn('[loadData] Khong ghi duoc cache (bo nho day?):',e); }
       applyData(j.data); setStatus('ok');
-      unlockApp(); // CHI mo khoa sau khi server THAT SU xac nhan key dung voi dung nguoi - khong suy doan tu cache
     }else{
-      // Server tra loi that (doi ten sheet, het quota...): PHAI bao loi ke ca khi dang
-      // co cache cu de hien tam, neu khong nguoi dung ket o man hinh khoa ma khong hieu vi sao.
       setStatus('err',j.message);
-      if(!hasCache&&!j.unauthorized) alert('Không tải được dữ liệu từ server:\n'+(j.message||'Không rõ lỗi'));
+      if(!hasCache) alert('Không tải được dữ liệu từ server:\n'+(j.message||'Không rõ lỗi'));
     }
   }catch(e){ if(!hasCache) setStatus('err',e.message); else setStatus('ok'); }
   showLoading(false);
@@ -985,34 +945,17 @@ function fetchJSONP(url){
     document.head.appendChild(s);
   });
 }
-// Tap trung diem gan API KEY vao MOI request (GET va POST) - de tranh quen gan o tung
-// noi goi rai rac, cung la 1 cho DUY NHAT can sua neu sau nay doi cach truyen key.
-// Van gui kem "staff" (nguoi dang duoc chon) nhung CHI de backend ghi nguoi phu trach
-// vao don hang - khong con dung de xac thuc nua (da chuyen sang 1 ma chung).
-//
-// Backend tra ve unauthorized:true = ma bao mat trong file nay khong khop voi ma ben
-// Apps Script (thuong la admin vua doi key ma file chua duoc phat lai). Nhan vien KHONG
-// tu sua duoc (khong con o nhap ma), nen chi bao ro de ho lien he quan tri vien.
-let authResetShown=false; // chan hien alert LAP LAI nhieu lan neu cac request nen (vd polling doanh thu) tiep tuc goi
-function handleApiAuthResult(j){
-  if(j && j.unauthorized && !authResetShown){
-    authResetShown=true;
-    alert(tr('keyMismatchAlert'));
-  }
-  return j;
-}
+// Tap trung diem goi API (GET va POST) - 1 cho duy nhat can sua neu sau nay doi cach goi.
 function apiGet(actionQuery){
   const sep=sheetUrl.includes('?')?'&':'?';
-  let url=sheetUrl+(actionQuery?sep+actionQuery:'');
-  url+=(url.includes('?')?'&':'?')+'key='+encodeURIComponent(apiKey)+'&staff='+encodeURIComponent(currentStaff||'');
-  return fetchJSONP(url).then(handleApiAuthResult);
+  const url=sheetUrl+(actionQuery?sep+actionQuery:'');
+  return fetchJSONP(url);
 }
-// Tra ve JSON DA PARSE san (khong phai Response tho nua) - tap trung 1 cho de kiem tra
-// unauthorized cho moi noi goi, khong phai tu parse rai rac o tung noi.
+// Tra ve JSON DA PARSE san (khong phai Response tho) de noi goi khong phai tu JSON.parse rai rac.
 function apiPost(body,extraOpts){
-  return fetch(sheetUrl,Object.assign({method:'POST',body:JSON.stringify(Object.assign({},body,{key:apiKey,staff:currentStaff||''}))},extraOpts))
+  return fetch(sheetUrl,Object.assign({method:'POST',body:JSON.stringify(body)},extraOpts))
     .then(r=>r.text())
-    .then(txt=>{ let j=null; try{ j=JSON.parse(txt); }catch(e){} return handleApiAuthResult(j); });
+    .then(txt=>{ let j=null; try{ j=JSON.parse(txt); }catch(e){} return j; });
 }
 function ymdLocal(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 // Chi cho chon trong HISTORY_MAX_DAYS_BACK ngay gan nhat (hom nay tro ve truoc) -
@@ -1041,7 +984,7 @@ function openOrderHistory(){
 }
 function closeOrderHistory(){ document.getElementById('history-modal').classList.add('hidden'); }
 async function loadOrderHistory(force=false){
-  if(!apiKey){ openSettings(); return; }
+  if(!sheetUrl){ openSettings(); return; }
   const dateToLoad=currentHistoryDate||ymdLocal(new Date());
   const body=document.getElementById('history-body');
   body.innerHTML=`<div class="history-empty">${tr('historyEmptyLoading')}</div>`;
@@ -1336,7 +1279,7 @@ function todayKeyStr(){
 }
 
 async function reserveNextOrderId(){
-  if(!apiKey || reservingId) return;
+  if(!sheetUrl || reservingId) return;
   reservingId = true;
   try{
     const j = await apiPost({action:'reserveOrderId'});
@@ -1351,7 +1294,7 @@ async function reserveNextOrderId(){
 // ============ SO LIEU HOM NAY (don + doanh thu, theo thoi gian thuc) ============
 let lastUnenteredCount=null, lastUnenteredRevenue=null;
 async function loadTodayStats(){
-  if(!apiKey) return;
+  if(!sheetUrl) return;
   try{
     const j=await apiGet('action=getTodayStats');
     if(j.status==='success'){
@@ -1443,7 +1386,7 @@ function applyCustTags(c,tags){
   saveCustTagsInBackground(c.id,newTagsStr);
 }
 function saveCustTagsInBackground(code,tagsStr){
-  if(!apiKey||!code) return;
+  if(!sheetUrl||!code) return;
   apiPost({action:'update_customer_tags',data:{code:code,tags:tagsStr}})
     .then(j=>{
       if(!j||j.status!=='success') console.warn('[custTags] Luu that bai:',j);
@@ -2346,7 +2289,7 @@ async function handlePrint(){
     orderId = reservedOrderId;
     reservedOrderId = null;
   }
-  if(!orderId && apiKey){
+  if(!orderId && sheetUrl){
     // Trường hợp hiếm: chưa kịp giữ chỗ (app vừa mở đã in ngay) -> chờ nhanh tối đa 5s
     try{
       const ctrl=new AbortController();
@@ -2434,13 +2377,12 @@ ${allHtml}
   setTimeout(()=>w.print(),150);
 
   // === LƯU SHEET CHẠY NỀN + GIỮ CHỖ MÃ CHO ĐƠN TIẾP THEO ===
-  // TRUOC DAY dieu kien la (apiKey && orderId): khi mang cham khong lay kip ma don, don
-  // van IN RA cho khach nhung KHONG duoc luu va KHONG canh bao gi ca - mat han 1 don ma
-  // khong ai biet. Nay chi can co apiKey la luu; thieu ma don thi backend tu sinh
-  // (handleSaveOrder da ho tro san), va neu that su khong luu duoc thi
-  // saveOrderInBackground se bao loi ro rang sau 3 lan thu.
-  if(apiKey) saveOrderInBackground(saveData);
-  else alert('⚠️ CHƯA CÀI MÃ BẢO MẬT!\nĐơn đã in nhưng KHÔNG được lưu vào Sheet.\nVào Cài đặt nhập mã bảo mật rồi tạo lại đơn này.');
+  // Khong doi phai co orderId moi luu: neu mang cham khong lay kip ma don, don van IN RA
+  // cho khach va van duoc luu binh thuong - thieu ma don thi backend tu sinh (handleSaveOrder
+  // da ho tro san), va neu that su khong luu duoc thi saveOrderInBackground se bao loi ro
+  // rang sau 3 lan thu (thay vi mat han 1 don ma khong ai biet).
+  if(sheetUrl) saveOrderInBackground(saveData);
+  else alert('⚠️ CHƯA CÀI ĐẶT KẾT NỐI!\nĐơn đã in nhưng KHÔNG được lưu vào Sheet.\nVào Cài đặt nhập URL Apps Script rồi tạo lại đơn này.');
   reserveNextOrderId();
 }
 
