@@ -615,7 +615,7 @@ const I18N={
   noteLabel:            {vi:'Ghi chú', ja:'備考'},
   notePh:               {vi:'Ghi chú đơn hàng...', ja:'注文の備考...'},
   pasteOrderLabel:      {vi:'Dán đơn hàng nhanh (từ tin nhắn)', ja:'メッセージから注文を貼り付け'},
-  pasteOrderPh:         {vi:'Dán nội dung, ví dụ:\n- [BS02] - Bia Saigon Lager - ¥4.248\nSố lượng: 1 thùng', ja:'内容を貼り付け、例：\n- [BS02] - Bia Saigon Lager - ¥4.248\n数量: 1ケース'},
+  pasteOrderPh:         {vi:'Dán nội dung, ví dụ:\n- [BS02] - Bia Saigon Lager - ¥4.248\nSố lượng: 1 thùng\n(nhận cả tiếng Nhật 数量, Trung 数量, Anh Quantity)', ja:'内容を貼り付け、例：\n- [BS02] - Bia Saigon Lager - ¥4.248\n数量: 1ケース\n（ベトナム語Số lượng、中国語数量、英語Quantityにも対応）'},
   pasteOrderBtn:        {vi:'Đưa vào giỏ hàng', ja:'カートに追加'},
   pasteOrderReplace:    {vi:'Thay thế giỏ hàng hiện tại', ja:'現在のカートを置き換える'},
   printBtn:             {vi:'Tạo & In Đơn hàng', ja:'注文作成＆印刷'},
@@ -678,7 +678,7 @@ const I18N={
   pasteNeedCustAlert:       {vi:'Vui lòng chọn khách hàng trước khi dán đơn hàng!', ja:'注文を貼り付ける前に顧客を選択してください！'},
   pasteNoProductDataAlert:  {vi:'Dữ liệu sản phẩm chưa được tải. Bấm ↻ để tải lại.', ja:'商品データがまだ読み込まれていません。↻ を押して再読込してください。'},
   pasteAddedAlert:          {vi:'Đã thêm {n} sản phẩm vào giỏ hàng!', ja:'{n}件の商品をカートに追加しました！'},
-  pasteNoMatchAlert:        {vi:'Không tìm thấy sản phẩm nào khớp định dạng [MÃ]...Số lượng: X', ja:'[コード]...数量: X の形式に一致する商品が見つかりませんでした'},
+  pasteNoMatchAlert:        {vi:'Không tìm thấy sản phẩm nào khớp định dạng [MÃ]...Số lượng/数量/Quantity: X', ja:'[コード]...Số lượng/数量/Quantity: X の形式に一致する商品が見つかりませんでした'},
   pasteNotFoundSkusAlert:   {vi:'\n\nKhông tìm thấy mã: {list}', ja:'\n\n見つからなかったコード: {list}'},
   custIdRequiredAlert:      {vi:'Vui lòng nhập Mã KH!', ja:'得意先コードを入力してください！'},
   custAddrRequiredAlert:    {vi:'Vui lòng nhập Địa chỉ!', ja:'住所を入力してください！'},
@@ -1963,7 +1963,10 @@ function handlePasteOrder(){
   if(!productData.length){ alert(tr('pasteNoProductDataAlert')); return; }
   if(document.getElementById('paste-order-replace').checked) t.cart=[];
   const num=v=>parseFloat(String(v||'').replace(/,/g,''))||0;
-  const regex=/\[([A-Z0-9\-_]+)\][^]*?Số\s*lượng:\s*([\d.]+)/gi;
+  // Nhan dien nhan "so luong" o 4 ngon ngu (khach nhat/trung/anh cung nhan tin dat hang):
+  // VN "Số lượng", JA/ZH "数量" (giong het ky tu), EN "Quantity". Chap nhan ca dau hai
+  // cham thuong ":" lan dau hai cham full-width "：" (nguoi Nhat/Trung hay go dau nay).
+  const regex=/\[([A-Za-z0-9\-_]+)\][^]*?(?:Số\s*lượng|数量|Quantity)\s*[:：]\s*([\d.]+)/gi;
   let m, found=0, notFound=[];
   while((m=regex.exec(text))!==null){
     const sku=m[1].toUpperCase();
