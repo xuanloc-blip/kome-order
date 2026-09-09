@@ -82,6 +82,7 @@ body { font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Got
 #tabs-bar::-webkit-scrollbar { display: none; }
 #today-stats { display: flex; gap: 8px; flex-shrink: 0; margin-left: 8px; }
 .stat-chip { position: relative; background: rgba(255,255,255,.15); border: 1px solid var(--yellow); color: #fff; border-radius: 16px; padding: 5px 12px; font-size: 11px; font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+.stat-chip:hover { z-index: 100; }
 .stat-chip b { color: #ffe27a; font-size: 12px; }
 #stat-tooltip { display: none; position: absolute; top: calc(100% + 9px); left: 0; z-index: 60; background: var(--white); color: var(--gray1); border: 1px solid var(--gray4); border-radius: 10px; box-shadow: 0 8px 20px rgba(0,0,0,.2); padding: 10px 14px; font-size: 12px; font-weight: 600; white-space: nowrap; text-align: left; }
 #stat-tooltip.show { display: block; }
@@ -126,8 +127,7 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
 .cat-btn { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--gray4); background: var(--white); font-size: 12px; cursor: pointer; white-space: nowrap; color: var(--gray2); flex-shrink: 0; }
 .cat-btn.active { background: var(--red); color: #fff; border-color: var(--red); font-weight: 700; }
 #product-grid { flex: 1; min-height: 0; overflow-y: auto; padding: 12px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; align-content: start; }
-.product-card { position: relative; border: 1px solid var(--gray4); border-radius: 12px; cursor: pointer; overflow: hidden; transition: all .15s; background: var(--white); display: flex; flex-direction: row; align-items: stretch; min-height: 150px; content-visibility: auto; contain-intrinsic-size: 150px; }
-.product-card:hover { border-color: var(--red); box-shadow: 0 4px 14px rgba(212,45,39,.22); transform: translateY(-2px); }
+.product-card { position: relative; border: 1px solid var(--gray4); border-radius: 12px; cursor: pointer; overflow: hidden; background: var(--white); display: flex; flex-direction: row; align-items: stretch; min-height: 150px; content-visibility: auto; contain-intrinsic-size: 150px; }
 .pc-img-wrap { width: 42%; min-width: 76px; max-width: 130px; flex-shrink: 0; background: #fff; display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--gray5); overflow: hidden; }
 .pc-img-wrap img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
 .pc-placeholder { font-size: 34px; }
@@ -340,6 +340,45 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
 ::-webkit-scrollbar-thumb { background: #d9cba8; border-radius: 3px; }
 
 @media (max-width: 1280px) { #main { grid-template-columns: 1fr 390px; } }
+
+/* ============ CHUYEN DONG (CSS animation) ============
+   5 hieu ung: 1) toast thay alert() thanh cong, 2) phan hoi khi them vao gio,
+   3) the san pham nhac len khi re chuot (da co san, chi tinh chinh), 4) so lieu
+   "hom nay" lan so, 5) khung cho (skeleton) thay vung trong luc tai lan dau.
+   Tat ca deu animate transform/opacity - chay tren GPU, khong dung cham toi thoi
+   gian goi Google Sheet (van la diem nghen thuc su, animation khong sua duoc no). */
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; } }
+
+/* --- 1) Toast (thay cho alert() o cac thong bao THANH CONG, khong chan thao tac) --- */
+#toast-stack { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 3000; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+.toast { display: flex; align-items: center; gap: 10px; background: var(--white); border: 1px solid var(--gray4); box-shadow: 0 10px 26px rgba(0,0,0,.16); border-radius: 999px; padding: 10px 18px 10px 14px; font-size: 13px; font-weight: 700; color: var(--gray1); white-space: nowrap; opacity: 0; transform: translateY(-14px); animation: toastIn .32s cubic-bezier(.22,1,.36,1) forwards; }
+.toast.leaving { animation: toastOut .28s ease-in forwards; }
+.toast .t-ico { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex: 0 0 auto; }
+.toast.good .t-ico { background: var(--red-light); color: var(--green); }
+.toast.info .t-ico { background: var(--yellow-light); color: var(--yellow-dark); }
+@keyframes toastIn { to { opacity: 1; transform: translateY(0); } }
+@keyframes toastOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
+
+/* --- 2) Phan hoi khi them vao gio: the san pham "nay" nhe + dong gio hang vua cham sang mau --- */
+.product-card.just-added { animation: cardPop .38s cubic-bezier(.22,1,.36,1); }
+@keyframes cardPop { 0% { transform: scale(1); } 35% { transform: scale(1.035); border-color: var(--green); box-shadow: 0 6px 18px rgba(46,125,50,.28); } 100% { transform: scale(1); } }
+.cart-row.just-touched { animation: rowFlash 1s ease; }
+@keyframes rowFlash { 0% { background: var(--yellow-light); } 100% { background: transparent; } }
+
+/* --- 3) The san pham nhac len khi re chuot (tinh chinh lai easing/do nay cho muot hon) --- */
+.product-card { transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s ease, border-color .2s ease; }
+.product-card:hover { border-color: var(--red); transform: translateY(-3px); box-shadow: 0 10px 22px rgba(212,45,39,.2); }
+
+/* --- 4) So lieu "hom nay" lan so thay vi nhay dot ngot --- */
+#stat-order-count, #stat-revenue { font-variant-numeric: tabular-nums; transition: color .3s ease; }
+#stat-order-count.flash, #stat-revenue.flash { color: var(--green); }
+
+/* --- 5) Khung cho (skeleton) thay cho o san pham trong trong luc tai lan dau --- */
+.pc-skel { position: relative; border: 1px solid var(--gray4); border-radius: 12px; overflow: hidden; background: var(--white); display: flex; flex-direction: row; min-height: 150px; }
+.pc-skel .sk-img { width: 42%; min-width: 76px; max-width: 130px; flex-shrink: 0; }
+.pc-skel .sk-body { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+.sk-bar { border-radius: 5px; background: linear-gradient(100deg, var(--gray5) 30%, var(--gray4) 50%, var(--gray5) 70%); background-size: 200% 100%; animation: skShimmer 1.15s ease-in-out infinite; }
+@keyframes skShimmer { 0% { background-position: 180% 0; } 100% { background-position: -20% 0; } }
 </style>
 </head>
 <body>
@@ -368,6 +407,7 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
 </div>
 
 <div id="loading" class="hidden"><div class="spinner"></div></div>
+<div id="toast-stack"></div>
 <div id="settings-modal" class="hidden">
   <div class="modal">
     <h2><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> <span data-i18n="settingsTitle">Cài đặt kết nối</span></h2>
@@ -456,7 +496,17 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
       </div>
     </div>
     <div id="cat-filter"></div>
-    <div id="product-grid"></div>
+    <!-- Khung cho (skeleton) mac dinh - renderProducts() se xoa va thay bang the that
+         ngay khi co du lieu (tu cache hay tu server). Neu lan dau vao trang, cho nay
+         hien SAN thay vi de trong trang, do la nguoi dung thay ngay khi vua mo web. -->
+    <div id="product-grid">
+      <div class="pc-skel"><div class="sk-img sk-bar"></div><div class="sk-body"><div class="sk-bar" style="height:9px;width:70%;"></div><div class="sk-bar" style="height:9px;width:45%;"></div><div class="sk-bar" style="height:9px;width:55%;margin-top:6px;"></div></div></div>
+      <div class="pc-skel"><div class="sk-img sk-bar"></div><div class="sk-body"><div class="sk-bar" style="height:9px;width:70%;"></div><div class="sk-bar" style="height:9px;width:45%;"></div><div class="sk-bar" style="height:9px;width:55%;margin-top:6px;"></div></div></div>
+      <div class="pc-skel"><div class="sk-img sk-bar"></div><div class="sk-body"><div class="sk-bar" style="height:9px;width:70%;"></div><div class="sk-bar" style="height:9px;width:45%;"></div><div class="sk-bar" style="height:9px;width:55%;margin-top:6px;"></div></div></div>
+      <div class="pc-skel"><div class="sk-img sk-bar"></div><div class="sk-body"><div class="sk-bar" style="height:9px;width:70%;"></div><div class="sk-bar" style="height:9px;width:45%;"></div><div class="sk-bar" style="height:9px;width:55%;margin-top:6px;"></div></div></div>
+      <div class="pc-skel"><div class="sk-img sk-bar"></div><div class="sk-body"><div class="sk-bar" style="height:9px;width:70%;"></div><div class="sk-bar" style="height:9px;width:45%;"></div><div class="sk-bar" style="height:9px;width:55%;margin-top:6px;"></div></div></div>
+      <div class="pc-skel"><div class="sk-img sk-bar"></div><div class="sk-body"><div class="sk-bar" style="height:9px;width:70%;"></div><div class="sk-bar" style="height:9px;width:45%;"></div><div class="sk-bar" style="height:9px;width:55%;margin-top:6px;"></div></div></div>
+    </div>
   </div>
 
   <!-- COL 2: ORDER -->
@@ -1282,6 +1332,20 @@ ${o.discount&&o.discount!=='0'?`<tr><td class="tl">割引 (Giảm giá)</td><td>
 function escapeHtml(v){
   return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+// Thong bao NHE, tu bien mat - danh cho tin THANH CONG/thong tin, KHONG chan thao tac
+// tiep theo (khac voi alert() van giu nguyen cho loi nghiem trong can nguoi dung xac nhan
+// da doc, vd "LƯU ĐƠN THẤT BẠI"). type: 'good' (xanh) hoac 'info' (vang).
+function showToast(msg,type){
+  const stack=document.getElementById('toast-stack');
+  const el=document.createElement('div');
+  el.className='toast '+(type||'good');
+  el.innerHTML=`<span class="t-ico">${type==='info'?'ℹ':'✓'}</span><span>${escapeHtml(msg)}</span>`;
+  stack.appendChild(el);
+  setTimeout(()=>{
+    el.classList.add('leaving');
+    el.addEventListener('animationend',()=>el.remove(),{once:true});
+  },2600);
+}
 function jsString(v){
   return String(v??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r/g,'').replace(/\n/g,'\\n');
 }
@@ -1357,6 +1421,23 @@ async function reserveNextOrderId(){
 }
 
 // ============ SO LIEU HOM NAY (don + doanh thu, theo thoi gian thuc) ============
+// Cho so "lan" dan len thay vi nhay dot ngot moi 45s - de mat de nhan ra vua co don moi,
+// dong thoi nhap nhay mau xanh 1 chut de xac nhan. Lan dau tien (dang la "--") thi hien
+// thang, khong lan, vi chua co gi de "tang tu" ca.
+function rollNumber(elId, to, fmt){
+  const el=document.getElementById(elId);
+  const from=parseInt(el.dataset.raw,10);
+  el.dataset.raw=to;
+  if(isNaN(from) || from===to){ el.textContent=fmt(to); return; }
+  const dur=600, t0=performance.now();
+  el.classList.add('flash');
+  (function step(t){
+    const p=Math.min(1,(t-t0)/dur), eased=1-Math.pow(1-p,3);
+    el.textContent=fmt(Math.round(from+(to-from)*eased));
+    if(p<1) requestAnimationFrame(step);
+    else setTimeout(()=>el.classList.remove('flash'),250);
+  })(t0);
+}
 let lastUnenteredCount=null, lastUnenteredRevenue=null;
 async function loadTodayStats(){
   if(!sheetUrl) return;
@@ -1364,8 +1445,8 @@ async function loadTodayStats(){
     const j=await apiGet('action=getTodayStats');
     if(j.status==='success'){
       const d=j.data||{};
-      document.getElementById('stat-order-count').textContent=(d.orderCount||0).toLocaleString('ja-JP');
-      document.getElementById('stat-revenue').textContent='¥'+(d.revenue||0).toLocaleString('ja-JP');
+      rollNumber('stat-order-count', d.orderCount||0, n=>n.toLocaleString('ja-JP'));
+      rollNumber('stat-revenue', d.revenue||0, n=>'¥'+n.toLocaleString('ja-JP'));
       lastUnenteredCount = typeof d.unenteredCount==='number' ? d.unenteredCount : null;
       lastUnenteredRevenue = typeof d.unenteredRevenue==='number' ? d.unenteredRevenue : null;
       updateStatTooltip();
@@ -1399,6 +1480,7 @@ async function saveOrderInBackground(saveData, attempt){
       const e=new Error(j.message||'Máy chủ từ chối lưu đơn'); e.retryable=false; throw e;
     }
     console.log('[saveOrder] Đã lưu nền OK:', j.orderId, j.duplicate?'(đã có sẵn, không ghi lặp)':'', j.repairedMaster?'(đã ghi bù bảng tổng)':'');
+    if(!j.duplicate) showToast('Đã lưu đơn hàng #'+j.orderId+' vào Sheet','good');
     loadTodayStats(); // don moi vua luu xong -> cap nhat so lieu ngay, khong cho het 45s
   }catch(err){
     console.error('[saveOrder] Lưu nền thất bại (lần '+attempt+'):', err);
@@ -1827,7 +1909,7 @@ function productCardHtml(p){
   const hasArrival=arrivalDate!==''&&arrivalAmount!==''&&arrivalAmount!=='未注文'&&arrivalDate!=='未注文';
   const img=p.image?`<img src="${escapeHtml(imgSrc(p.image))}" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=pc-placeholder>📦</div>'">`:`<div class="pc-placeholder">📦</div>`;
   const isOOS=stockNum<=0;
-  return `<div class="product-card${isOOS?' pc-oos':''}" onclick="addToCart('${attrJs(p.sku)}')">
+  return `<div class="product-card${isOOS?' pc-oos':''}" onclick="addToCart('${attrJs(p.sku)}',event)">
     ${isOOS?`<div class="pc-oos-badge">${tr('outOfStockBadge')}</div>`:onSale?`<div class="sale-ribbon">SALE</div>`:''}
     <div class="pc-img-wrap">${img}</div>
     <div class="pc-body">
@@ -1934,7 +2016,7 @@ function getShipType(cat){
   return 'dry';
 }
 let pendingOOSSku=null;
-function addToCart(sku){
+function addToCart(sku,ev){
   const t=getTab(); if(!t) return;
   if(!t.customer){ alert(tr('selectCustFirstAlert')); return; }
   const p=productData.find(x=>x.sku===sku); if(!p) return;
@@ -1946,7 +2028,7 @@ function addToCart(sku){
     document.getElementById('oos-modal').classList.remove('hidden');
     return;
   }
-  doAddToCart(p);
+  doAddToCart(p,ev&&ev.currentTarget);
 }
   function togglePasteOrder(){
   const body=document.getElementById('paste-order-body');
@@ -1986,6 +2068,10 @@ function handlePasteOrder(){
   }
   renderCart(); renderTabs();
   ta.value='';
+  // Thanh cong tron ven (co them hang, khong sot ma nao) -> toast nhe, khong chan tay
+  // dang go tiep. Co phan khong tim thay ma/khong khop gi ca -> van alert() vi nhan vien
+  // CAN DOC de biet mieng ma bi thieu, khong nen tu bien mat.
+  if(found>0 && !notFound.length){ showToast(tf('pasteAddedAlert',{n:found}),'good'); return; }
   let msg=found>0?tf('pasteAddedAlert',{n:found}):tr('pasteNoMatchAlert');
   if(notFound.length) msg+=tf('pasteNotFoundSkusAlert',{list:notFound.join(', ')});
   alert(msg);
@@ -2000,7 +2086,11 @@ function confirmOOSAdd(){
   if(p) doAddToCart(p);
   pendingOOSSku=null;
 }
-function doAddToCart(p){
+// lastTouchedSku: nho SAN PHAM VUA DUOC THEM de renderCart() to sang dung 1 dong do 1
+// lan (phan hoi "da them" ma khong can toast rieng cho tung cai - nhan vien bam lien tuc
+// hang chuc SKU/don, toast lien tuc se gay roi hon la giup ich).
+let lastTouchedSku=null;
+function doAddToCart(p,cardEl){
   const t=getTab(); if(!t) return;
   const pr=parseFloat((p.price||'').replace(/,/g,''))||0, ps=parseFloat((p.priceSale||'').replace(/,/g,''))||0;
   const fp=ps>0&&ps<pr?ps:pr;
@@ -2010,6 +2100,11 @@ function doAddToCart(p){
   const ex=t.cart.find(x=>x.sku===p.sku);
   if(ex) ex.qty=Math.round((ex.qty+q)*100)/100;
   else t.cart.push({sku:p.sku,name:p.name,nameJP:p.nameJP||'',price:fp,originalPrice:pr,qty:q,isXot,shippingType:shipType,discount:0,discountType:'yen'});
+  lastTouchedSku=p.sku;
+  if(cardEl){
+    cardEl.classList.remove('just-added'); void cardEl.offsetWidth; // reset de bam lien tuc van thay hieu ung
+    cardEl.classList.add('just-added');
+  }
   renderCart(); renderTabs();
 }
 function effPrice(i){
@@ -2251,7 +2346,8 @@ function renderCart(){
       const marginPct=calcMarginPct(it.sku, it.isXot?ep*4:ep);
       const marginHtml=marginPct===null?'':`<span class="cr-margin ${marginClass(marginPct)}">${tr('marginLabel')} ${marginPct}%</span>`;
       const skuAttr=attrJs(it.sku);
-      cartHtml+=`<div class="cart-row"><div class="cr-name"><strong>${escapeHtml(it.name)}</strong><small>${escapeHtml(it.sku)}</small>${marginHtml}</div>
+      const justTouched=it.sku===lastTouchedSku;
+      cartHtml+=`<div class="cart-row${justTouched?' just-touched':''}"><div class="cr-name"><strong>${escapeHtml(it.name)}</strong><small>${escapeHtml(it.sku)}</small>${marginHtml}</div>
         <div class="qty-ctrl"><button class="qty-btn" onclick="chgQty('${skuAttr}',-1)">−</button><input type="number" class="qty-input" value="${it.qty}" min="${it.isXot?0.25:1}" step="${it.isXot?0.25:1}" onclick="this.select()" onkeydown="if(event.key==='Enter')this.blur()" onchange="setQty('${skuAttr}',this.value)"><button class="qty-btn" onclick="chgQty('${skuAttr}',1)">+</button></div>
         <span class="cart-price${(it.discount||0)!==0?' discounted':''}" onclick="openPricePop('${skuAttr}',event)" title="${tr('editPriceHint')}">¥${effPrice(it).toLocaleString('ja-JP')}</span>
         <span class="cart-total">¥${tot.toLocaleString('ja-JP')}</span><span class="cart-del" onclick="delItem('${skuAttr}')">×</span></div>`;
@@ -2268,6 +2364,7 @@ function renderCart(){
 </div>`;
   });
   cartEl.innerHTML=cartHtml;
+  lastTouchedSku=null; // chi to sang 1 LAN cho lan render nay - render sau (doi so luong, xoa hang...) tro lai binh thuong
   let cod=0;
   if(t.customer?.seikyu==='代引請求'){
     const def=subAll>=20000?300:330;
