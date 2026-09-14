@@ -583,17 +583,18 @@ const SHEET_URL_KEY='kome_sheet_url', CACHE_KEY='kome_data_cache_v4', STAFF_KEY=
 const DEFAULT_SHEET_URL='https://script.google.com/macros/s/AKfycbwszMofAslML69DVGfXvGn9tjp57R9ksUBim-6i6mMaVARwQFpHXPC2ivexjJENiJJc/exec';
 const CACHE_TTL=15*60*1000, RENDER_CHUNK=40;
 const TAX10=['BS01','BS02','BS04','BS06','HAB05','HAB06','HAL02','HAL03','HAL08','HAL11','LD01','LD02','RV01','RV02','RV03','RV05','RV06','RV07','RV09'];
-// 3 nguoi dau (chinh thuc) hien mac dinh; tu vi tri thu 4 tro di (アルバイト + quan tri
+// 4 nguoi dau (chinh thuc) hien mac dinh; tu vi tri thu 5 tro di (アルバイト + quan tri
 // vien) nam sau nut mui ten "xem them" tren man hinh chon nguoi lên đơn.
 const STAFF_LIST=[
   {name:'Trình Công Minh',    short:'M', avatar:'./images/minh.png'},
   {name:'Trần Thị Lan Thanh', short:'T', avatar:'./images/thanh.png'},
   {name:'Hà Huy Long',        short:'L', avatar:'./images/long.png'},
+  {name:'Nguyễn Phương Dung', short:'D', avatar:'./images/dung.png'},
   {name:'愛華 本田',           short:'愛', avatar:'./images/aika.png'},
   {name:'Hà Minh Chiến',      short:'C', avatar:''},
   {name:'Quản trị viên',      short:'★', avatar:''},
 ];
-const STAFF_PAGE_SIZE=3;
+const STAFF_PAGE_SIZE=4;
 let staffPageIndex=0;
 // アルバイト + quan tri vien khong gan voi PIC khach nao ca -> luon hien ten ho tren hoa
 // don thay vi lay theo c.pic (xem cho dung o salesRep trong handlePrint()).
