@@ -280,8 +280,27 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
 #loading.hidden { display: none; }
 .spinner { width: 40px; height: 40px; border: 4px solid rgba(254,200,48,.35); border-top-color: var(--yellow); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-#settings-modal, #history-modal, #oos-modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-#settings-modal.hidden, #history-modal.hidden, #oos-modal.hidden { display: none; }
+#settings-modal, #history-modal, #oos-modal, #admin-pw-modal, #staff-manage-modal, #staff-form-modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+#settings-modal.hidden, #history-modal.hidden, #oos-modal.hidden, #admin-pw-modal.hidden, #staff-manage-modal.hidden, #staff-form-modal.hidden { display: none; }
+/* Modal nay phai hien duoc CA KHI dang o man hinh chon nhan vien (z-index 2000) - cao
+   hon staff-screen/welcome-screen thay vi dung chung 1000 nhu cac modal khac. */
+#admin-pw-modal { z-index: 2200; }
+/* Form them/sua nhan vien mo TREN modal danh sach - can z-index cao hon 1000 mot chut. */
+#staff-form-modal { z-index: 1100; }
+.staff-form-err { color: var(--red); font-size: 12px; min-height: 14px; }
+#staff-manage-body { padding: 4px 2px 2px; max-height: 60vh; overflow-y: auto; }
+.staff-manage-row { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid var(--gray5); }
+.staff-manage-avatar { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background: var(--yellow-light); display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--red-dark); flex-shrink: 0; font-size: 14px; }
+.staff-manage-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.staff-manage-info { flex: 1; min-width: 0; }
+.staff-manage-name { font-weight: 700; font-size: 13px; }
+.staff-manage-name .badge-admin { color: var(--red); font-size: 11px; font-weight: 800; margin-left: 4px; }
+.staff-manage-sub { font-size: 11px; color: var(--gray3); }
+.staff-manage-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.staff-manage-actions button { padding: 4px 10px; font-size: 12px; }
+.staff-manage-empty { color: var(--gray3); font-size: 13px; padding: 12px 4px; }
+.staff-form-avatar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.staff-form-avatar-preview { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: var(--gray5); flex-shrink: 0; }
 .modal { background: #fff; border-radius: 12px; padding: 24px; width: 470px; box-shadow: 0 8px 32px rgba(0,0,0,.3); }
 .modal.wide { width: min(920px, calc(100vw - 28px)); max-height: calc(100vh - 34px); display: flex; flex-direction: column; padding: 0; overflow: hidden; }
 .modal h2 { margin-bottom: 16px; font-size: 16px; color: var(--red-dark); }
@@ -451,6 +470,53 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
   </div>
 </div>
 
+<div id="admin-pw-modal" class="hidden">
+  <div class="modal" style="width:360px;">
+    <h2><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Mật khẩu Quản trị viên</h2>
+    <label>Nhập mật khẩu để tiếp tục</label>
+    <input id="admin-pw-input" type="password" placeholder="Mật khẩu..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();submitAdminPassword();}">
+    <div id="admin-pw-error" style="color:var(--red);font-size:12px;margin:-8px 0 12px;min-height:14px;"></div>
+    <div class="modal-btns">
+      <button class="btn-primary" id="admin-pw-submit" onclick="submitAdminPassword()">Xác nhận</button>
+      <button class="btn-ghost" onclick="closeAdminPasswordModal()">Hủy</button>
+    </div>
+  </div>
+</div>
+
+<div id="staff-manage-modal" class="hidden">
+  <div class="modal wide" style="max-width:640px;">
+    <h2><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg> Quản lý nhân viên <button class="icon-close" onclick="closeStaffManage()" title="Đóng">×</button></h2>
+    <div id="staff-manage-body">
+      <div id="staff-manage-list"></div>
+      <div id="staff-manage-error" class="staff-form-err"></div>
+      <button class="btn-primary" onclick="openStaffForm(null)">+ Thêm nhân viên</button>
+    </div>
+  </div>
+</div>
+
+<div id="staff-form-modal" class="hidden">
+  <div class="modal" style="width:380px;">
+    <h2 id="staff-form-title">Thêm nhân viên</h2>
+    <label>Tên đầy đủ</label>
+    <input id="staff-form-name" placeholder="VD: Nguyễn Văn A">
+    <label>Chữ viết tắt hiển thị tạm (khi chưa có ảnh)</label>
+    <input id="staff-form-short" maxlength="2" placeholder="VD: A">
+    <label>Ảnh đại diện</label>
+    <div class="staff-form-avatar-row">
+      <img id="staff-form-avatar-preview" class="staff-form-avatar-preview">
+      <input type="file" id="staff-form-avatar-file" accept="image/*" onchange="onStaffAvatarPicked(event)">
+    </div>
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+      <input type="checkbox" id="staff-form-admin" style="width:auto;margin:0;"> Là Quản trị viên (cần nhập mật khẩu khi chọn)
+    </label>
+    <div id="staff-form-error" class="staff-form-err" style="margin-top:10px;"></div>
+    <div class="modal-btns" style="margin-top:14px;">
+      <button class="btn-primary" id="staff-form-submit" onclick="submitStaffForm()">Lưu</button>
+      <button class="btn-ghost" onclick="closeStaffForm()">Hủy</button>
+    </div>
+  </div>
+</div>
+
 <div id="oos-modal" class="hidden">
   <div class="modal" style="width:380px;">
     <h2><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> <span data-i18n="oosTitle">Sản phẩm đã hết hàng</span></h2>
@@ -484,6 +550,7 @@ body.hide-stock-info .pc-stock, body.hide-stock-info .pc-arrival, body.hide-stoc
     <span id="connection-status">●</span>
     <button class="tb-btn" onclick="reloadData()" title="Tải lại dữ liệu" data-i18n-title="reloadDataBtn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg></button>
     <button class="tb-btn" onclick="openOrderHistory()" title="Lịch sử đơn hàng" data-i18n-title="historyTitle">≡</button>
+    <button class="tb-btn" id="btn-manage-staff" onclick="openStaffManage()" title="Quản lý nhân viên" style="display:none;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></button>
     <button class="tb-btn" id="btn-toggle-stock" onclick="toggleStockInfoVisibility()" title="Ẩn/hiện tồn kho, hàng về & lãi" data-i18n-title="toggleStockShow"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
     <button class="tb-btn" onclick="openSettings()" title="Cài đặt" data-i18n-title="settingsBtn"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
   </div>
@@ -587,17 +654,30 @@ const SHEET_URL_KEY='kome_sheet_url', CACHE_KEY='kome_data_cache_v4', STAFF_KEY=
 const DEFAULT_SHEET_URL='https://script.google.com/macros/s/AKfycbwszMofAslML69DVGfXvGn9tjp57R9ksUBim-6i6mMaVARwQFpHXPC2ivexjJENiJJc/exec';
 const CACHE_TTL=15*60*1000, RENDER_CHUNK=40;
 const TAX10=['BS01','BS02','BS04','BS06','HAB05','HAB06','HAL02','HAL03','HAL08','HAL11','LD01','LD02','RV01','RV02','RV03','RV05','RV06','RV07','RV09'];
-// 4 nguoi dau (chinh thuc) hien mac dinh; tu vi tri thu 5 tro di (アルバイト + quan tri
-// vien) nam sau nut mui ten "xem them" tren man hinh chon nguoi lên đơn.
-const STAFF_LIST=[
+// Danh sach nhan vien GIO DAY lay tu Google Sheet (Quan tri vien tu them/sua/xoa qua
+// giao dien "Quan ly nhan vien"), khong con hard-code o day nua. Mang duoi day chi la
+// LUOI DU PHONG: dung khi may vua mo trang lan dau (chua co cache) ma mang cham/mat -
+// van co gi do de hien ngay thay vi man hinh trong. refreshStaffList() se goi server
+// va thay the ngay khi co du lieu that.
+const DEFAULT_STAFF_LIST=[
   {name:'Trình Công Minh',    short:'M', avatar:'./images/minh.png'},
   {name:'Trần Thị Lan Thanh', short:'T', avatar:'./images/thanh.png'},
   {name:'Hà Huy Long',        short:'L', avatar:'./images/long.png'},
   {name:'Nguyễn Phương Dung', short:'D', avatar:'./images/dung.png'},
   {name:'愛華 本田',           short:'愛', avatar:'./images/aika.png'},
   {name:'Hà Minh Chiến',      short:'C', avatar:''},
-  {name:'Quản trị viên',      short:'★', avatar:''},
+  {name:'Quản trị viên',      short:'★', avatar:'', admin:true},
 ];
+const STAFF_CACHE_KEY='kome_staff_list_cache_v1';
+function loadStaffListCache(){
+  try{
+    const raw=localStorage.getItem(STAFF_CACHE_KEY);
+    if(!raw) return null;
+    const arr=JSON.parse(raw);
+    return Array.isArray(arr)&&arr.length?arr:null;
+  }catch(e){ return null; }
+}
+let STAFF_LIST=loadStaffListCache()||DEFAULT_STAFF_LIST;
 const STAFF_PAGE_SIZE=4;
 let staffPageIndex=0;
 // アルバイト + quan tri vien khong gan voi PIC khach nao ca -> luon hien ten ho tren hoa
@@ -793,6 +873,11 @@ function setLang(lang){
 
 let sheetUrl=localStorage.getItem(SHEET_URL_KEY)||DEFAULT_SHEET_URL;
 let currentStaff=localStorage.getItem(STAFF_KEY)||'';
+// isAdmin chi ton tai trong phien lam viec (sessionStorage) - dong tab/trinh duyet la
+// mat, lan sau mo lai phai nhap lai mat khau. Mat khau that duoc kiem tra o Apps Script
+// (xem handleVerifyAdminPassword), khong luu/so sanh gi o day ca.
+let isAdmin=sessionStorage.getItem('kome_is_admin')==='1';
+let pendingStaffIndex=null;
 let customerData={}, productData=[], chokuData=[], orderHistoryData=[];
 let expandedHistoryOrderId='';
 // So ngay lich su duoc phep xem lai - PHAI trung voi CLEANUP_KEEP_DAYS ben AppsScript,
@@ -872,6 +957,18 @@ function staffPage(delta){
 function goStaffPage(i){ staffPageIndex=i; updateStaffPageUI(); }
 function selectStaff(i){
   const s=STAFF_LIST[i];
+  // ID Quan tri vien: bat buoc nhap mat khau (kiem tra that o Apps Script) truoc khi
+  // cho vao, ke ca khi da tung dang nhap thanh cong o phien truoc do bi mat (isAdmin
+  // reset khi dong tab) - tranh nguoi khac ngoi vao may tro lai la vao thang duoc.
+  if(s.admin && !isAdmin){ pendingStaffIndex=i; openAdminPasswordModal(); return; }
+  finishSelectStaff(i);
+}
+function finishSelectStaff(i){
+  const s=STAFF_LIST[i];
+  // Chon nguoi KHONG PHAI admin -> huy quyen admin dang co trong phien nay (neu truoc
+  // do da tung dang nhap admin roi bam "doi nguoi"). Tranh nguoi ke tiep ngoi vao may
+  // tu nhien duoc thua huong quyen ma khong can nhap mat khau.
+  if(!s.admin){ isAdmin=false; sessionStorage.removeItem('kome_is_admin'); }
   currentStaff=s.name;
   localStorage.setItem(STAFF_KEY,currentStaff);
   const ws=document.getElementById('welcome-screen');
@@ -880,8 +977,153 @@ function selectStaff(i){
   ws.classList.add('show');
   document.getElementById('staff-screen').classList.add('hidden');
   updateStaffChip();
+  applyAdminUI();
   setTimeout(()=>{ ws.classList.remove('show'); }, 2000);
   loadData(); reserveNextOrderId(); startTodayStatsPolling();
+}
+function applyAdminUI(){
+  const btn=document.getElementById('btn-manage-staff');
+  if(btn) btn.style.display=isAdmin?'':'none';
+}
+function openAdminPasswordModal(){
+  document.getElementById('admin-pw-input').value='';
+  document.getElementById('admin-pw-error').textContent='';
+  document.getElementById('admin-pw-modal').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('admin-pw-input').focus(),50);
+}
+function closeAdminPasswordModal(){
+  document.getElementById('admin-pw-modal').classList.add('hidden');
+  pendingStaffIndex=null;
+}
+async function submitAdminPassword(){
+  const pw=document.getElementById('admin-pw-input').value;
+  const errEl=document.getElementById('admin-pw-error');
+  if(!pw){ errEl.textContent='Vui lòng nhập mật khẩu.'; return; }
+  const btn=document.getElementById('admin-pw-submit');
+  btn.disabled=true; btn.textContent='Đang kiểm tra...';
+  try{
+    const j=await apiPost({action:'verifyAdminPassword', data:{password:pw}});
+    if(j && j.status==='success' && j.valid){
+      isAdmin=true; sessionStorage.setItem('kome_is_admin','1');
+      const idx=pendingStaffIndex;
+      closeAdminPasswordModal();
+      finishSelectStaff(idx);
+    }else if(j && j.status==='error'){
+      errEl.textContent=j.message||'Có lỗi xảy ra, thử lại sau.';
+    }else{
+      errEl.textContent='Sai mật khẩu.';
+    }
+  }catch(e){
+    errEl.textContent='Không kết nối được server, kiểm tra mạng.';
+  }
+  btn.disabled=false; btn.textContent='Xác nhận';
+}
+
+// ============ QUAN LY NHAN VIEN (chi Quan tri vien thay nut va mo duoc) ============
+function openStaffManage(){
+  document.getElementById('staff-manage-error').textContent='';
+  renderStaffManageList();
+  document.getElementById('staff-manage-modal').classList.remove('hidden');
+}
+function closeStaffManage(){ document.getElementById('staff-manage-modal').classList.add('hidden'); }
+function renderStaffManageList(){
+  const el=document.getElementById('staff-manage-list');
+  if(!STAFF_LIST.length){ el.innerHTML='<div class="staff-manage-empty">Chưa có nhân viên nào.</div>'; return; }
+  el.innerHTML=STAFF_LIST.map(function(s){
+    const avatarHtml=s.avatar?`<img src="${escapeHtml(s.avatar)}" onerror="this.remove()">`:escapeHtml(s.short||'?');
+    return `<div class="staff-manage-row">
+      <div class="staff-manage-avatar">${avatarHtml}</div>
+      <div class="staff-manage-info">
+        <div class="staff-manage-name">${escapeHtml(s.name)}${s.admin?' <span class="badge-admin">★ Admin</span>':''}</div>
+        <div class="staff-manage-sub">Viết tắt: ${escapeHtml(s.short||'')}</div>
+      </div>
+      <div class="staff-manage-actions">
+        <button class="btn-ghost" onclick="openStaffForm('${attrJs(s.id)}')">Sửa</button>
+        <button class="btn-ghost" style="color:var(--red);" onclick="deleteStaffConfirm('${attrJs(s.id)}')">Xóa</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let staffFormEditId=null, staffFormAvatarBase64=null, staffFormAvatarMime=null;
+function openStaffForm(id){
+  staffFormEditId=id;
+  staffFormAvatarBase64=null; staffFormAvatarMime=null;
+  document.getElementById('staff-form-error').textContent='';
+  document.getElementById('staff-form-avatar-file').value='';
+  const s=id?STAFF_LIST.find(x=>x.id===id):null;
+  document.getElementById('staff-form-title').textContent=id?'Sửa nhân viên':'Thêm nhân viên';
+  document.getElementById('staff-form-name').value=s?s.name:'';
+  document.getElementById('staff-form-short').value=s?s.short:'';
+  document.getElementById('staff-form-admin').checked=s?!!s.admin:false;
+  document.getElementById('staff-form-avatar-preview').src=(s&&s.avatar)?s.avatar:'';
+  document.getElementById('staff-form-modal').classList.remove('hidden');
+}
+function closeStaffForm(){ document.getElementById('staff-form-modal').classList.add('hidden'); }
+function onStaffAvatarPicked(ev){
+  const file=ev.target.files[0];
+  if(!file) return;
+  staffFormAvatarMime=file.type;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    staffFormAvatarBase64=reader.result.split(',')[1];
+    document.getElementById('staff-form-avatar-preview').src=reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+async function submitStaffForm(){
+  const name=document.getElementById('staff-form-name').value.trim();
+  const shortInput=document.getElementById('staff-form-short').value.trim();
+  const admin=document.getElementById('staff-form-admin').checked;
+  const errEl=document.getElementById('staff-form-error');
+  errEl.textContent='';
+  if(!name){ errEl.textContent='Vui lòng nhập tên.'; return; }
+  const short=shortInput||name.split(/\s+/).pop().charAt(0).toUpperCase();
+  const btn=document.getElementById('staff-form-submit');
+  btn.disabled=true; btn.textContent='Đang lưu...';
+  try{
+    let avatarUrl=staffFormEditId?((STAFF_LIST.find(x=>x.id===staffFormEditId)||{}).avatar||''):'';
+    if(staffFormAvatarBase64){
+      const up=await apiPost({action:'uploadProductImage', data:{filename:'staff_'+Date.now(), mimeType:staffFormAvatarMime, base64Data:staffFormAvatarBase64}});
+      if(up&&up.status==='ok'){ avatarUrl=up.url; }
+      else{ errEl.textContent='Tải ảnh lên thất bại: '+((up&&up.message)||''); btn.disabled=false; btn.textContent='Lưu'; return; }
+    }
+    const fields={name:name, short:short, avatar:avatarUrl, admin:admin};
+    const resp=staffFormEditId
+      ? await apiPost({action:'updateStaff', data:{id:staffFormEditId, fields:fields}})
+      : await apiPost({action:'addStaff', data:fields});
+    if(resp&&resp.status==='ok'){
+      await refreshStaffList();
+      closeStaffForm();
+      renderStaffManageList();
+    }else{
+      errEl.textContent=(resp&&resp.message)||'Có lỗi xảy ra.';
+    }
+  }catch(e){
+    errEl.textContent='Không kết nối được server.';
+  }
+  btn.disabled=false; btn.textContent='Lưu';
+}
+function deleteStaffConfirm(id){
+  const s=STAFF_LIST.find(x=>x.id===id);
+  if(!s) return;
+  if(!confirm('Xóa nhân viên "'+s.name+'"?')) return;
+  deleteStaff(id);
+}
+async function deleteStaff(id){
+  const errEl=document.getElementById('staff-manage-error');
+  errEl.textContent='';
+  try{
+    const resp=await apiPost({action:'deleteStaff', data:{id:id}});
+    if(resp&&resp.status==='ok'){
+      await refreshStaffList();
+      renderStaffManageList();
+    }else{
+      errEl.textContent=(resp&&resp.message)||'Không xóa được.';
+    }
+  }catch(e){
+    errEl.textContent='Không kết nối được server.';
+  }
 }
 // Mo lai man hinh nay (vd bam doi nguoi) -> tu dong nhay dung TRANG dang chua nguoi hien
 // tai, tranh nguoi dung phai tu bam mui ten tim lai neu ho dang o trang 2.
@@ -980,6 +1222,9 @@ function restoreTabsDraft(){
 // ============ SETTINGS / DATA ============
 function openSettings(){
   document.getElementById('setting-url').value=sheetUrl;
+  // Doi link ket noi Google Sheet chi danh cho Quan tri vien - nhan vien thuong khong
+  // can vi da co DEFAULT_SHEET_URL san, an muc nay di de tranh bam nham lam sai link.
+  document.querySelector('#settings-modal .adv-settings').style.display=isAdmin?'':'none';
   document.getElementById('settings-modal').classList.remove('hidden');
 }
 function closeSettings(){ document.getElementById('settings-modal').classList.add('hidden'); }
@@ -1042,6 +1287,22 @@ function fetchJSONP(url){
     s.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
     document.head.appendChild(s);
   });
+}
+// Lay danh sach nhan vien MOI NHAT tu server (khong doi staff-select xong moi tai nhu
+// san pham/khach hang, vi chinh danh sach nay quyet dinh man hinh dau tien nguoi dung
+// thay). Chay ngam khi vua mo trang - neu dang o man hinh chon nguoi thi ve lai luon
+// cho cap nhat kip thoi (vd Quan tri vien vua them nguoi moi tren may khac).
+async function refreshStaffList(){
+  try{
+    const j=await apiGet('action=getStaffList');
+    if(j && j.status==='success' && Array.isArray(j.data) && j.data.length){
+      STAFF_LIST=j.data;
+      localStorage.setItem(STAFF_CACHE_KEY, JSON.stringify(STAFF_LIST));
+      if(!document.getElementById('staff-screen').classList.contains('hidden')){
+        renderStaffScreen();
+      }
+    }
+  }catch(e){ /* im lang - da co danh sach cache/du phong de dung tam */ }
 }
 // Tap trung diem goi API (GET va POST) - 1 cho duy nhat can sua neu sau nay doi cach goi.
 function apiGet(actionQuery){
@@ -2627,6 +2888,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   for(let i=1;i<=31;i++){const o=document.createElement('option');o.textContent=i;ds.appendChild(o);}
   applyI18n();
   renderStaffScreen();
+  refreshStaffList();
   updateStaffChip();
   applyStockInfoVisibility(localStorage.getItem(STOCK_INFO_HIDDEN_KEY)==='1');
   if(!restoreTabsDraft()) newTab();   // khoi phuc don dang lam do (neu co), khong thi mo tab trong
