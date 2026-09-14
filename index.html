@@ -2715,6 +2715,15 @@ function cartSignature(t){
   });
 }
 async function doPrint(t){
+  // Mo cua so in NGAY TU DAU (truoc bat ky await nao) - trinh duyet chi coi window.open()
+  // la "hanh dong nguoi dung truc tiep" (khong bi chan popup) khi no chay DONG BO ngay
+  // trong cu bam, chua qua await nao. Neu mo o cuoi ham (sau khi cho mang xin ma don o
+  // duoi), co the bi chan -> window.open() tra ve null -> ".document" loi ngay o dong
+  // ke tiep (loi that da gap: "Cannot read properties of null (reading 'document')").
+  const printWin=window.open('','_blank');
+  if(!printWin){
+    throw new Error('Trình duyệt đã chặn cửa sổ in (popup). Vui lòng cho phép popup cho trang này rồi bấm "Tạo & In Đơn hàng" lại.');
+  }
 
   const dm=document.getElementById('delivery-month').value, dd=document.getElementById('delivery-day').value;
   const dt=document.getElementById('delivery-time').value, nt=document.getElementById('order-note').value;
@@ -2853,12 +2862,11 @@ ${allHtml}
 <tr><td class="tl">合 計</td><td class="tq">${allCr.toLocaleString()} ケース</td><td class="tv"><strong>¥${fin.toLocaleString('ja-JP')}</strong><div style="font-size:8pt;font-weight:normal;color:#888;margin-top:2px;">(Đã bao gồm thuế: ¥${tax.toLocaleString('ja-JP')})</div></td></tr>
 </table></div></body></html>`;
 
-  // === IN NGAY LẬP TỨC — KHÔNG CHỜ LƯU SHEET ===
-  const w=window.open('','_blank');
-  w.document.write(html);
-  w.document.close();
-  w.focus();
-  setTimeout(()=>w.print(),150);
+  // === IN NGAY LẬP TỨC — KHÔNG CHỜ LƯU SHEET === (cua so da mo tu dau ham, xem printWin)
+  printWin.document.write(html);
+  printWin.document.close();
+  printWin.focus();
+  setTimeout(()=>printWin.print(),150);
 
   // === LƯU SHEET CHẠY NỀN + GIỮ CHỖ MÃ CHO ĐƠN TIẾP THEO ===
   // Khong doi phai co orderId moi luu: neu mang cham khong lay kip ma don, don van IN RA
