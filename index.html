@@ -2799,7 +2799,10 @@ async function doPrint(t){
     customerId:c.id,customerName:c.name,address:c.address||'',chokuId:dc,chokuName:dn,staff:salesRep,
     items:t.cart.map(it=>{
       const ep=effPrice(it);
-      const unitPrice = it.isXot ? it.price*4 : it.price;
+      // 単価 gui len = GIA DA SUA (ep), khong phai gia goc it.price: bang tong OBC入力データ
+      // khong co cot giam gia nen neu gui gia goc thi 単価×数量 ≠ 金額 va 奉行 nhap sai gia.
+      // discount van gui kem (chi de tham khao o cot 割引(商品) cua sheet ngay).
+      const unitPrice = it.isXot ? ep*4 : ep;
       const unitDiscount = it.isXot ? (it.price-ep)*4 : (it.price-ep);
       return {
         sku:it.sku,
